@@ -1,0 +1,9 @@
+supabase
+feedparser
+beautifulsoup4
+python-dotenv
+requests
+lxml
+google-generativeai
+apscheduler
+loguru

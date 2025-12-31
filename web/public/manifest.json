@@ -1,0 +1,33 @@
+{
+  "name": "Techmoa - 기술 블로그 모음집",
+  "short_name": "Techmoa",
+  "description": "국내 주요 기업과 개발자들의 기술 블로그를 한곳에서 모아보세요.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "48x48",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "news", "education"],
+  "lang": "ko",
+  "scope": "/"
+}

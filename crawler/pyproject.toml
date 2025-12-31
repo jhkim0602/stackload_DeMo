@@ -1,0 +1,20 @@
+[project]
+name = "stackload-crawler"
+version = "0.1.0"
+description = "RSS Crawler for StackLoad"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "supabase",
+    "feedparser",
+    "beautifulsoup4",
+    "python-dotenv",
+    "requests",
+    "lxml",
+    "google-generativeai",
+    "apscheduler",
+    "loguru"
+]
+
+[tool.setuptools]
+packages = ["src"]
