@@ -1,57 +1,121 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mic, Video, Settings, PlayCircle } from "lucide-react";
-import Link from "next/link";
+"use client";
 
-export default function InterviewDashboard() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { JobUrlInput } from "@/components/domains/interview/job-url-input";
+import { JobAnalysisResult } from "@/components/domains/interview/job-analysis-result";
+import { ModeSelection } from "@/components/domains/interview/mode-selection";
+import { InterviewDashboardCards } from "@/components/domains/interview/interview-dashboard-cards";
+import { Card, CardContent } from "@/components/ui/card";
+import { Clock, ChevronRight } from "lucide-react";
+
+type ViewState = "dashboard" | "analysis_result" | "mode_selection";
+
+export default function InterviewPage() {
+  const router = useRouter();
+  const [viewState, setViewState] = useState<ViewState>("dashboard");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleUrlSubmit = (url: string, resumeData?: any) => {
+    setIsAnalyzing(true);
+    // Simulate API call delay
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      setViewState("analysis_result");
+    }, 2500);
+  };
+
+  const handleAnalysisNext = () => {
+    setViewState("mode_selection");
+  };
+
+  const handleModeSelect = (mode: "video" | "pre-qna", personality: string) => {
+    if (mode === "video") {
+      router.push(`/interview/room?personality=${personality}`);
+    } else {
+      router.push(`/interview/pre-qna`);
+    }
+  };
+
+  const handleBackToDashboard = () => {
+      setViewState("dashboard");
+  };
+
   return (
-    <div className="container mx-auto py-12 px-4">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold mb-4">AI Tech Interview</h1>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Practice technical interviews with our AI avatar.
-          Get real-time feedback on your answers and improve your communication skills.
-        </p>
+    <div className="container max-w-6xl mx-auto py-12 px-4">
+
+      {/* Header Area */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight cursor-pointer" onClick={handleBackToDashboard}>AI 면접 코칭 센터</h1>
+            <p className="text-muted-foreground mt-1">
+                성공적인 취업을 위한 나만의 면접 파트너
+            </p>
+          </div>
+          {viewState !== 'dashboard' && (
+              <button onClick={handleBackToDashboard} className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4">
+                  대시보드로 돌아가기
+              </button>
+          )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {/* Quick Start Card */}
-        <Card className="col-span-1 md:col-span-2 bg-gradient-to-br from-indigo-50 to-white dark:from-slate-900 dark:to-slate-800 border-indigo-200 dark:border-indigo-900">
-          <CardHeader>
-            <CardTitle className="text-2xl text-indigo-700 dark:text-indigo-400">Quick Start</CardTitle>
-            <CardDescription>Start a general technical interview session immediately.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1"><Mic className="w-4 h-4"/> Voice Enabled</div>
-                <div className="flex items-center gap-1"><Video className="w-4 h-4"/> Avatar Video</div>
-              </div>
-              <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="/interview/room">
-                  <PlayCircle className="mr-2 w-5 h-5"/>
-                  Enter Interview Room
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-12">
+        {/* Dynamic Content Area */}
+        <div className="transition-all duration-500 min-h-[400px]">
+            {viewState === "dashboard" && (
+                <div className="space-y-12">
+                    {/* Hero: Job Analysis */}
+                    <section>
+                         <JobUrlInput onSubmit={handleUrlSubmit} isAnalyzing={isAnalyzing} />
+                    </section>
 
-        {/* Settings Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-            <CardDescription>Setup your microphone and camera.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <Button variant="outline" className="w-full justify-start">
-               <Settings className="mr-2 w-4 h-4" /> Device Settings
-             </Button>
-             <Button variant="outline" className="w-full justify-start">
-               History & Feedback
-             </Button>
-          </CardContent>
-        </Card>
+                    {/* Quick Access Cards */}
+                    <section>
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                             빠른 실행
+                        </h2>
+                        <InterviewDashboardCards />
+                    </section>
+
+                    {/* Recent History (Mock) */}
+                     <section>
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                             <Clock className="w-5 h-5 text-indigo-500" /> 최근 활동
+                        </h2>
+                        <div className="grid gap-4">
+                            {[1, 2].map((i) => (
+                                <Card key={i} className="hover:bg-muted/30 transition-colors cursor-pointer">
+                                    <CardContent className="p-4 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500">
+                                                D-{i}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium">원티드랩 프로덕트 디자이너 (시니어)</p>
+                                                <p className="text-xs text-muted-foreground">어제 확인한 공고 • 사전 Q&A 연습 완료</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+            )}
+
+            {viewState === "analysis_result" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4">
+                    <JobAnalysisResult onNext={handleAnalysisNext} />
+                </div>
+            )}
+
+            {viewState === "mode_selection" && (
+                 <div className="animate-in fade-in zoom-in-95">
+                    <ModeSelection onSelect={handleModeSelect} />
+                 </div>
+            )}
+        </div>
       </div>
     </div>
   );

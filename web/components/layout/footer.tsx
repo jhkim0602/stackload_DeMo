@@ -8,7 +8,7 @@ export function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-center md:text-left">
             <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-2">
-              Techmoa
+              StackLoad
             </h3>
           </div>
 
@@ -38,9 +38,7 @@ export function Footer() {
         </div>
 
         <div className="mt-6 pt-6 border-t border-slate-200/50 dark:border-slate-700/50 text-center">
-          <p className="text-xs text-slate-500 dark:text-slate-500">
-            © 2025 Techmoa. All rights reserved.
-          </p>
+            © 2025 StackLoad. All rights reserved.
         </div>
       </div>
     </footer>

@@ -38,12 +38,15 @@ export default function Live2DPlayer({ modelUrl, isSpeaking, className }: Live2D
         Live2DModel.registerTicker(PIXI.Ticker);
 
         const app = new PIXI.Application({
-          view: canvasRef.current,
+          view: canvasRef.current as HTMLCanvasElement,
           autoStart: true,
-          backgroundAlpha: 0, // Transparent background
+          backgroundAlpha: 0,
           width: 800,
           height: 800,
-          resizeTo: canvasRef.current.parentElement as HTMLElement,
+          resizeTo: canvasRef.current?.parentElement as HTMLElement,
+          antialias: true, // Smoother edges
+          autoDensity: true, // Handle high DPI
+          resolution: window.devicePixelRatio || 1,
         });
 
         appRef.current = app;
@@ -59,18 +62,33 @@ export default function Live2DPlayer({ modelUrl, isSpeaking, className }: Live2D
         modelRef.current = model;
         app.stage.addChild(model);
 
-        // Center and scale model
-        const scaleX = (app.renderer.width * 0.8) / model.width;
-        const scaleY = (app.renderer.height * 0.8) / model.height;
-        const scale = Math.min(scaleX, scaleY);
+        // Center and scale model robustly
+        const resizeModel = () => {
+            if (!model || !app || !app.renderer) return;
 
-        model.scale.set(scale);
-        model.x = (app.renderer.width - model.width) / 2;
-        model.y = (app.renderer.height - model.height * 0.8); // slight offset from bottom
+            // Fit height mostly (e.g. 80% of screen height) but keep within width
+            const scaleX = (app.renderer.width) / model.internalModel.width;
+            const scaleY = (app.renderer.height * 0.85) / model.internalModel.height;
+
+            // Use the smaller scale to fit
+            const scale = Math.min(scaleX, scaleY);
+
+            model.scale.set(scale);
+
+            // Center Horizontally
+            model.x = (app.renderer.width - model.width) / 2;
+
+            // Align Bottom (with slight offset)
+            model.y = app.renderer.height - model.height;
+        };
+
+        resizeModel();
+        // Hook into resize event if PIXI resizeTo doesn't trigger layout update for model
+        app.renderer.on('resize', resizeModel);
 
       } catch (e) {
         console.error("Failed to load Live2D model:", e);
-        if(isMounted) setError("Failed to load avatar.");
+        if(isMounted) setError("Failed to load avatar. (Check console)");
       }
     };
 

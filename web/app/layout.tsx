@@ -63,7 +63,7 @@ export default function RootLayout({
         >
           <div className="relative flex min-h-screen flex-col">
             <GlobalHeader />
-            <div className="flex-1">{children}</div>
+            <div className="flex-1 pt-14">{children}</div>
             <GlobalMobileNav />
           </div>
           <Toaster />
