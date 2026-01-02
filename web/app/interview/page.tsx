@@ -21,22 +21,56 @@ export default function InterviewPage() {
     sessionStorage.removeItem("interviewData");
   }, []);
 
-  const handleUrlSubmit = (url: string, resumeData?: any) => {
+  const handleUrlSubmit = async (url: string, resumeData?: any) => {
     setIsAnalyzing(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setViewState("analysis_result");
 
-      // Save initial data to sessionStorage
-      const data = {
-        jdUrl: url,
-        resumeText: resumeData?.text || "",
-        // Note: File objects cannot be stored in sessionStorage directly.
-        // For this demo, we rely on text input or mock extraction.
-      };
-      sessionStorage.setItem("interviewData", JSON.stringify(data));
-    }, 2500);
+    try {
+        const backendUrl = "http://127.0.0.1:12393"; // Or configure via env
+
+        // 1. Analyze JD URL
+        const jdPromise = fetch(`${backendUrl}/analyze/jd`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url })
+        }).then(res => {
+            if (!res.ok) throw new Error("JD Analysis failed");
+            return res.json();
+        });
+
+        // 2. Analyze Resume (if provided)
+        let resumePromise: Promise<any> = Promise.resolve(null);
+        if (resumeData?.file) {
+            const formData = new FormData();
+            formData.append("file", resumeData.file);
+            resumePromise = fetch(`${backendUrl}/analyze/resume`, {
+                method: "POST",
+                body: formData
+            }).then(res => {
+                if (!res.ok) throw new Error("Resume Analysis failed");
+                return res.json();
+            });
+        }
+
+        // Wait for both
+        const [jdResult, resumeResult] = await Promise.all([jdPromise, resumePromise]);
+
+        // Save data to sessionStorage
+        const data = {
+            jdUrl: url,
+            jdAnalysis: jdResult, // Structured JD analysis
+            resumeAnalysis: resumeResult, // Structured resume analysis
+            resumeText: resumeResult?.raw_text || resumeData?.text || "",
+        };
+        sessionStorage.setItem("interviewData", JSON.stringify(data));
+
+        setViewState("analysis_result");
+
+    } catch (error) {
+        console.error("Analysis Error:", error);
+        alert("분석 중 오류가 발생했습니다. 백엔드 서버 상태를 확인해주세요.");
+    } finally {
+        setIsAnalyzing(false);
+    }
   };
 
   const handleAnalysisNext = () => {
@@ -132,7 +166,10 @@ export default function InterviewPage() {
 
             {viewState === "analysis_result" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4">
-                    <JobAnalysisResult onNext={handleAnalysisNext} />
+                    <JobAnalysisResult
+                        onNext={handleAnalysisNext}
+                        data={JSON.parse(sessionStorage.getItem("interviewData") || "{}")}
+                    />
                 </div>
             )}
 

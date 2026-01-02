@@ -7,7 +7,6 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track } from "livekit-client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import Live2DPlayer from "@/components/domains/interview/live2d-player";
 import { UserVideo } from "@/components/domains/interview/user-video";
@@ -16,6 +15,7 @@ import { Mic, MicOff, Video, VideoOff, PhoneOff, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useInterviewSession } from "@/hooks/use-interview-session";
 
 export default function InterviewLiveKit() {
   const [token, setToken] = useState("");
@@ -49,7 +49,7 @@ export default function InterviewLiveKit() {
 
   return (
     <LiveKitRoom
-      video={false} // Disable LiveKit video publishing (Local only)
+      video={false}
       audio={true}
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
@@ -68,24 +68,75 @@ function InterviewInterface() {
   const room = useRoomContext();
   const router = useRouter();
 
-  // State
-  const [isAgentSpeakingState, setIsAgentSpeakingState] = useState(false);
-  const isAgentSpeaking = isAgentSpeakingState;
-  const [interviewPhase, setInterviewPhase] = useState<string>("");
-  const [guideText, setGuideText] = useState<string>("");
-
   // Local Video State
   const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(null);
   const [isLocalCameraEnabled, setIsLocalCameraEnabled] = useState(true);
 
-  // Refs
-  const wsRef = useRef<WebSocket | null>(null);
+  // Audio Processing Refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const inputContextRef = useRef<AudioContext | null>(null);
+  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+
+  // Audio Processing Logic for Agent Speech (TTS)
+  const processAudioQueue = useCallback(() => {
+      if (!audioContextRef.current) return;
+
+      if (audioQueueRef.current.length === 0) {
+          isPlayingRef.current = false;
+          setIsAgentSpeaking(false);
+          return;
+      }
+
+      isPlayingRef.current = true;
+      setIsAgentSpeaking(true);
+
+      const chunk = audioQueueRef.current.shift();
+      if (!chunk) return;
+
+      const buffer = audioContextRef.current.createBuffer(1, chunk.length, 24000);
+      buffer.getChannelData(0).set(chunk);
+
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContextRef.current.destination);
+
+      source.onended = () => {
+          processAudioQueue();
+      };
+      source.start();
+  }, []);
+
+  const handleAudioData = useCallback((audioData: any) => {
+      // Initialize AudioContext on first audio packet if needed
+      if (!audioContextRef.current) {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          audioContextRef.current = new AudioContextClass();
+      }
+
+      // audioData comes as regular array from hook, convert to Float32Array
+      audioQueueRef.current.push(new Float32Array(audioData));
+
+      if (!isPlayingRef.current) {
+          processAudioQueue();
+      }
+  }, [processAudioQueue]);
+
+  // Use Custom Hook
+  const { state, startSession, sendUserAudio, sendBehaviorData } = useInterviewSession({
+      url: `ws://127.0.0.1:12393/client-ws`,
+      onAudioData: handleAudioData
+  });
+
+  // Start Session on Mount
+  useEffect(() => {
+      const stored = sessionStorage.getItem("interviewData");
+      if (stored && state.isConnected && state.phase === 'initial') {
+          const data = JSON.parse(stored);
+          startSession(data.jdUrl || "General JD", data.resumeText || "Candidate");
+      }
+  }, [state.isConnected, state.phase, startSession]);
+
 
   // Auto-enable microphone on mount
   useEffect(() => {
@@ -106,16 +157,12 @@ function InterviewInterface() {
           }
       };
       initCamera();
-
       return () => {
-          // Cleanup tracks on unmount is tricky if we want to toggle.
-          // But for now, let's keep it simple.
-          // Note: We don't stop tracks here directly to allow re-renders,
-          // but strictly speaking we should if component unmounts.
+          // Cleanup handled by stream tracks logic usually
       };
   }, []);
 
-  // Update enable/disable state of local tracks
+  // Sync local camera state
   useEffect(() => {
      if (localVideoStream) {
          localVideoStream.getVideoTracks().forEach(track => {
@@ -124,159 +171,36 @@ function InterviewInterface() {
      }
   }, [localVideoStream, isLocalCameraEnabled]);
 
-  // Initialize AudioContext (Output) for agent audio playback
-  useEffect(() => {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (AudioContextClass) {
-        audioContextRef.current = new AudioContextClass();
-    }
-    return () => {
-        audioContextRef.current?.close();
-    };
-  }, []);
 
-  // Audio Playback Logic for agent audio
-  const playNextAudioChunk = useCallback(() => {
-    if (!audioContextRef.current || audioQueueRef.current.length === 0) {
-        isPlayingRef.current = false;
-        setIsAgentSpeakingState(false);
-        return;
-    }
-
-    isPlayingRef.current = true;
-    setIsAgentSpeakingState(true);
-
-    const chunk = audioQueueRef.current.shift();
-    if (!chunk) return;
-
-    const buffer = audioContextRef.current.createBuffer(1, chunk.length, 24000); // Assuming 24kHz from backend
-    buffer.getChannelData(0).set(chunk);
-
-    const source = audioContextRef.current.createBufferSource();
-    source.buffer = buffer;
-    source.connect(audioContextRef.current.destination);
-
-    source.onended = () => {
-        playNextAudioChunk();
-    };
-
-    source.start();
-  }, [audioContextRef, audioQueueRef, isPlayingRef, setIsAgentSpeakingState]);
-
-  const queueAudio = useCallback((audioData: number[]) => {
-    audioQueueRef.current.push(new Float32Array(audioData));
-    if (!isPlayingRef.current) {
-        playNextAudioChunk();
-    }
-  }, [audioQueueRef, isPlayingRef, playNextAudioChunk]);
-
-  // WebSocket Connection to backend
-  useEffect(() => {
-    const backendPort = 12393; // Matches conf.default.yaml
-    const wsUrl = `ws://127.0.0.1:${backendPort}/client-ws`;
-
-    console.log("Connecting to backend WS:", wsUrl);
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-        console.log("Backend WS connected");
-
-        // Retrieve data from sessionStorage
-        const stored = sessionStorage.getItem("interviewData");
-        if (stored) {
-            const data = JSON.parse(stored);
-            console.log("Found session data, initializing interview...", data);
-
-            // Send initialization request to backend
-            ws.send(JSON.stringify({
-                type: 'init-interview-session',
-                jd: data.jdUrl, // Backend expects 'jd' (text or url). Currently passing URL as text.
-                resume: data.resumeText,
-                style: data.personality || 'professional'
-            }));
-        } else {
-            console.warn("No session data found in storage.");
-        }
-    };
-
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-
-            if (data.type === 'control') {
-                if (data.text) setInterviewPhase(data.text);
-                if (data.guide) setGuideText(data.guide);
-            } else if (data.type === 'status') {
-                setGuideText(data.message);
-            } else if (data.type === 'interview-session-created') {
-                console.log("Interview session ready:", data);
-                setGuideText(data.message || "면접 준비 완료. 시작합니다.");
-            } else if (data.type === 'audio') {
-                // Handle Audio Chunk
-                if (data.audio) {
-                     queueAudio(data.audio);
-                }
-            } else if (data.type === 'full-text') {
-                 // Should ideally show subtitles
-                 console.log("Agent:", data.text);
-            }
-        } catch (e) {
-            // Ignore non-JSON messages
-        }
-    };
-
-    ws.onerror = (err) => {
-        console.error("Backend WS error", err);
-    };
-
-    return () => {
-        ws.close();
-    };
-  }, [queueAudio, setInterviewPhase, setGuideText]); // Dependencies for callbacks and state setters
-
-  // Microphone Audio Capture & Transmission
+  // Capture User Audio (Microphone) -> Backend
   useEffect(() => {
     if (!isMicrophoneEnabled || !localParticipant) return;
 
-    let localStream: MediaStream | null = null;
-    let localProcessor: ScriptProcessorNode | null = null;
     let localCtx: AudioContext | null = null;
+    let localProcessor: ScriptProcessorNode | null = null;
+    let localSource: MediaStreamAudioSourceNode | null = null;
 
     const startCapture = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            localStream = stream;
-            mediaStreamRef.current = stream;
 
             const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            const ctx = new AudioContextClass({ sampleRate: 16000 }); // Downsample to 16kHz for backend
+            const ctx = new AudioContextClass({ sampleRate: 16000 });
             localCtx = ctx;
-            inputContextRef.current = ctx;
 
             const source = ctx.createMediaStreamSource(stream);
+            localSource = source;
             const processor = ctx.createScriptProcessor(4096, 1, 1);
             localProcessor = processor;
-            processorRef.current = processor;
 
             processor.onaudioprocess = (e) => {
-                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                    const inputData = e.inputBuffer.getChannelData(0);
-                    // Downsample or send as is (ctx is already 16k)
-                    // Convert Float32Array to regular array for JSON
-                    const audioData = Array.from(inputData);
-
-                    // Simple VAD/Threshold check to reduce bandwidth (Optional)
-                    // For now send all to let backend VAD handle it
-                    wsRef.current.send(JSON.stringify({
-                        type: 'mic-audio-data',
-                        audio: audioData
-                    }));
-                }
+                const inputData = e.inputBuffer.getChannelData(0);
+                // Send raw float32 array via hook
+                sendUserAudio(inputData);
             };
 
             source.connect(processor);
-            processor.connect(ctx.destination); // Required for script processor to run
+            processor.connect(ctx.destination);
         } catch (err) {
             console.error("Microphone capture error:", err);
         }
@@ -285,17 +209,12 @@ function InterviewInterface() {
     startCapture();
 
     return () => {
-         if (localProcessor) {
-             localProcessor.disconnect();
-         }
-         if (localCtx) {
-             localCtx.close();
-         }
-         if (localStream) {
-             localStream.getTracks().forEach(track => track.stop());
-         }
+         localProcessor?.disconnect();
+         localSource?.disconnect();
+         localCtx?.close();
     };
-  }, [isMicrophoneEnabled, localParticipant, wsRef]); // Re-run when mic is toggled or wsRef changes
+  }, [isMicrophoneEnabled, localParticipant, sendUserAudio]);
+
 
   const toggleMic = async () => {
     if (localParticipant) {
@@ -308,47 +227,45 @@ function InterviewInterface() {
   };
 
   const handleDisconnect = async () => {
-    if (room) {
-        await room.disconnect();
+    if (room) await room.disconnect();
+    if (localVideoStream) localVideoStream.getTracks().forEach(t => t.stop());
+
+    if (state.clientUid) {
+        router.push(`/interview/result?uid=${state.clientUid}`);
+    } else {
+        router.push('/interview');
     }
-    // Also stop local stream
-    if (localVideoStream) {
-        localVideoStream.getTracks().forEach(t => t.stop());
-    }
-    router.push('/interview');
   };
 
+  // UI Construction matches previous logic but uses 'state' from hook
   return (
     <div className="flex flex-col h-full w-full bg-slate-950 p-4 md:p-6 gap-4 md:gap-6">
-      {/* Main Content Area: Split View */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 min-h-0">
-
-        {/* Left: AI Interviewer */}
         <div className="relative h-full w-full rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 shadow-2xl overflow-hidden flex flex-col">
             {/* Header Badge */}
             <div className="absolute top-4 left-4 z-10 flex gap-2">
                 <div className="px-3 py-1.5 bg-blue-600/90 backdrop-blur-md rounded-lg text-white text-sm font-semibold shadow-lg">
                     AI 면접관 TechMoa
                 </div>
-                {interviewPhase && (
+                 {state.backendPhase && (
                    <div className="px-3 py-1.5 bg-slate-700/80 backdrop-blur-md rounded-lg text-white text-sm font-medium shadow-lg border border-slate-600">
-                       {interviewPhase === 'introduction' && '자기소개'}
-                       {interviewPhase === 'technical' && '기술면접'}
-                       {interviewPhase === 'behavioral' && '인성면접'}
-                       {interviewPhase === 'closing' && '마무리'}
-                       {!['introduction', 'technical', 'behavioral', 'closing'].includes(interviewPhase) && interviewPhase}
+                       {state.backendPhase === 'introduction' && '자기소개'}
+                       {state.backendPhase === 'technical' && '기술면접'}
+                       {state.backendPhase === 'behavioral' && '인성면접'}
+                       {state.backendPhase === 'closing' && '마무리'}
+                       {!['introduction', 'technical', 'behavioral', 'closing'].includes(state.backendPhase) && state.backendPhase}
                    </div>
-                )}
+                 )}
             </div>
 
-            {/* Guide Message Toast/Banner */}
-            {guideText && (
+            {/* Guide Message */}
+            {(state.systemGuide || state.statusMessage) && (
                 <div className="absolute top-16 left-4 right-4 z-10 animate-in slide-in-from-top-2 fade-in duration-500">
                     <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700 text-slate-200 px-4 py-3 rounded-xl shadow-xl flex items-start gap-3">
                          <div className="p-1 bg-blue-500/20 rounded-full mt-0.5">
                             <span className="text-blue-400 text-xs font-bold px-1.5">Guide</span>
                          </div>
-                         <p className="text-sm leading-relaxed">{guideText}</p>
+                         <p className="text-sm leading-relaxed">{state.systemGuide || state.statusMessage}</p>
                     </div>
                 </div>
             )}
@@ -362,7 +279,6 @@ function InterviewInterface() {
                 />
             </div>
 
-             {/* Status Indicator (Optional) */}
              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900/80 backdrop-blur-md rounded-full border border-slate-700/50 flex items-center gap-2">
                 <div className={cn("w-2 h-2 rounded-full", isAgentSpeaking ? "bg-green-500 animate-pulse" : "bg-slate-500")} />
                 <span className="text-xs font-medium text-slate-300">
@@ -371,7 +287,6 @@ function InterviewInterface() {
              </div>
         </div>
 
-        {/* Right: User Camera (Candidate) */}
         <div className="relative h-full w-full">
             <UserVideo
                 localStream={localVideoStream}
@@ -380,46 +295,28 @@ function InterviewInterface() {
             <NonVerbalAnalyzer
                 debug={true}
                 localStream={localVideoStream}
-                onData={(data) => {
-                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                        wsRef.current.send(JSON.stringify({
-                            type: 'behavior-data',
-                            data: data
-                        }));
-                    }
-                }}
+                onData={sendBehaviorData}
             />
         </div>
       </div>
 
-      {/* Bottom Control Bar */}
       <div className="h-20 shrink-0 flex items-center justify-center gap-4 bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl px-8 shadow-2xl">
-
-        {/* Mic Toggle */}
         <ControlButton
             onClick={toggleMic}
             isActive={isMicrophoneEnabled}
             activeIcon={<Mic />}
             inactiveIcon={<MicOff />}
         />
-
-        {/* Camera Toggle */}
         <ControlButton
             onClick={toggleCam}
             isActive={isLocalCameraEnabled}
             activeIcon={<Video />}
             inactiveIcon={<VideoOff />}
         />
-
-         {/* Separator */}
          <div className="w-px h-8 bg-slate-800 mx-2" />
-
-        {/* Adjust settings (Placeholder) */}
         <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full text-slate-400 hover:text-white hover:bg-slate-800">
             <Settings className="w-6 h-6" />
         </Button>
-
-         {/* End Interview Button */}
         <Button
             variant="destructive"
             size="lg"
@@ -434,7 +331,6 @@ function InterviewInterface() {
   );
 }
 
-// Helper component for styled controls
 function ControlButton({ onClick, isActive, activeIcon, inactiveIcon }: any) {
     return (
         <button

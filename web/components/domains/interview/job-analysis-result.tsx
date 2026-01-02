@@ -8,10 +8,13 @@ import { MOCK_JOB_ANALYSIS } from "@/mocks/interview-data";
 
 interface JobAnalysisResultProps {
   onNext: () => void;
+  data?: any;
 }
 
-export function JobAnalysisResult({ onNext }: JobAnalysisResultProps) {
-  const { company, position, qualifications, preferences, techStack, process } = MOCK_JOB_ANALYSIS;
+export function JobAnalysisResult({ onNext, data }: JobAnalysisResultProps) {
+  // Use real data if available, otherwise mock (or empty default)
+  const analysis = data?.jdAnalysis || MOCK_JOB_ANALYSIS;
+  const { company, position, qualifications, preferences, techStack, process } = analysis;
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
@@ -35,7 +38,7 @@ export function JobAnalysisResult({ onNext }: JobAnalysisResultProps) {
             </CardHeader>
             <CardContent>
                 <ul className="space-y-3">
-                    {qualifications.map((item, idx) => (
+                    {qualifications.map((item: string, idx: number) => (
                         <li key={idx} className="text-sm leading-relaxed flex items-start gap-2">
                              <span className="bg-indigo-100 text-indigo-600 rounded-full w-5 h-5 flex items-center justify-center text-[10px] mt-0.5 shrink-0">{idx + 1}</span>
                              {item}
@@ -53,7 +56,7 @@ export function JobAnalysisResult({ onNext }: JobAnalysisResultProps) {
             </CardHeader>
             <CardContent>
                 <ul className="space-y-3">
-                    {preferences.map((item, idx) => (
+                    {preferences.map((item: string, idx: number) => (
                         <li key={idx} className="text-sm leading-relaxed flex items-start gap-2">
                              <span className="bg-amber-100 text-amber-600 rounded-full w-5 h-5 flex items-center justify-center text-[10px] mt-0.5 shrink-0">+</span>
                              {item}
@@ -71,7 +74,7 @@ export function JobAnalysisResult({ onNext }: JobAnalysisResultProps) {
                 주요 기술 스택 및 채용 프로세스
             </h3>
             <div className="flex flex-wrap gap-2 mb-4">
-                {techStack.map(tech => (
+                {techStack.map((tech: string) => (
                     <Badge key={tech} variant="secondary" className="px-3 py-1">{tech}</Badge>
                 ))}
             </div>

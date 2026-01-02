@@ -121,7 +121,7 @@ export function NonVerbalAnalyzer({
           setLandmarker(lm);
           setStatus("Ready");
         } else {
-          lm.close();
+          lm.close?.();
         }
       } catch (e) {
         console.error("MediaPipe Init Error:", e);
