@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/next";
 import { GlobalHeader } from "@/components/layout/global-header";
 import { GlobalMobileNav } from "@/components/layout/mobile-nav";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: {
@@ -62,7 +63,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="relative flex min-h-screen flex-col">
-            <GlobalHeader />
+            <Suspense fallback={<div className="h-14 bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/50 dark:border-slate-700/50" />}>
+              <GlobalHeader />
+            </Suspense>
             <div className="flex-1 pt-14">{children}</div>
             <GlobalMobileNav />
           </div>

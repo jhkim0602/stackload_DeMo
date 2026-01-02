@@ -3,25 +3,47 @@
 import { useLocalParticipant, useMediaDeviceSelect, VideoTrack, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { User, VideoOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface UserVideoProps {
   className?: string;
+  isCameraEnabled?: boolean;
+  localStream?: MediaStream | null;
 }
 
-export function UserVideo({ className }: UserVideoProps) {
-  const { isCameraEnabled } = useLocalParticipant();
-  // Use useTracks to get the partial track reference which contains publication + participant + source
-  const tracks = useTracks([Track.Source.Camera]);
-  const cameraTrack = tracks.find(t => t.source === Track.Source.Camera);
+export function UserVideo({ className, isCameraEnabled, localStream }: UserVideoProps) {
+  // If localStream is provided, we use purely local rendering
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && localStream) {
+      videoRef.current.srcObject = localStream;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [localStream]);
+
+  // Fallback to LiveKit if no localStream (compatibility)
+  const { isCameraEnabled: lkCameraEnabled, localParticipant } = useLocalParticipant();
+  const finalCameraEnabled = isCameraEnabled ?? lkCameraEnabled;
 
   return (
     <div className={cn("relative w-full h-full bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl", className)}>
       {/* Video Feed */}
-      {isCameraEnabled && cameraTrack ? (
+      {finalCameraEnabled && localStream ? (
+         <video
+            ref={videoRef}
+            className="w-full h-full object-cover mirror-mode"
+            muted
+            playsInline
+         />
+      ) : finalCameraEnabled && localParticipant && localParticipant.getTrackPublication(Track.Source.Camera) ? (
           <VideoTrack
-            trackRef={cameraTrack}
+            trackRef={{
+              participant: localParticipant,
+              source: Track.Source.Camera,
+              publication: localParticipant.getTrackPublication(Track.Source.Camera)!
+            }}
             className="w-full h-full object-cover mirror-mode" // mirror-mode for self-view
           />
       ) : (

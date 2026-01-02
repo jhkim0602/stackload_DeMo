@@ -3,7 +3,9 @@
 import { SectionLandingPage, LandingItem } from "@/components/layout/section-landing-page";
 import { LayoutGrid, Wrench } from "lucide-react";
 
-export default function WorkspacePage() {
+import { Suspense } from "react";
+
+function WorkspaceContent() {
   const items: LandingItem[] = [
     {
       title: "프로젝트 관리",
@@ -27,5 +29,13 @@ export default function WorkspacePage() {
       description="당신의 프로젝트를 성공으로 이끄는 스마트한 작업 공간입니다."
       items={items}
     />
+  );
+}
+
+export default function WorkspacePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <WorkspaceContent />
+    </Suspense>
   );
 }

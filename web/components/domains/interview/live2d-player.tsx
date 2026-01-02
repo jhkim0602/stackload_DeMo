@@ -64,22 +64,32 @@ export default function Live2DPlayer({ modelUrl, isSpeaking, className }: Live2D
 
         // Center and scale model robustly
         const resizeModel = () => {
-            if (!model || !app || !app.renderer) return;
+             if (!model || !app || !app.renderer) return;
 
-            // Fit height mostly (e.g. 80% of screen height) but keep within width
-            const scaleX = (app.renderer.width) / model.internalModel.width;
-            const scaleY = (app.renderer.height * 0.85) / model.internalModel.height;
+             const containerWidth = app.renderer.width;
+             const containerHeight = app.renderer.height;
 
-            // Use the smaller scale to fit
-            const scale = Math.min(scaleX, scaleY);
+             // Reset anchor to center (x=0.5, y=0.5)
+             model.anchor.set(0.5, 0.5);
 
-            model.scale.set(scale);
+             // Determine Scale
+             // We want the width of the model to be roughly 140% of the container width to zoom in
+             const modelUnscaledWidth = model.internalModel.width;
+             const modelUnscaledHeight = model.internalModel.height;
 
-            // Center Horizontally
-            model.x = (app.renderer.width - model.width) / 2;
+             // Scale factors
+             const scaleX = (containerWidth * 1.1) / modelUnscaledWidth;
+             const scaleY = (containerHeight * 1.1) / modelUnscaledHeight;
+             const scale = Math.max(scaleX, scaleY);
 
-            // Align Bottom (with slight offset)
-            model.y = app.renderer.height - model.height;
+             model.scale.set(scale);
+
+             // Position - Anchor is Center (0.5, 0.5)
+             model.x = containerWidth * 0.29;
+             model.y = containerHeight * 0.7;
+
+             // Debug log
+             console.log("Resize Model:", { containerWidth, scale, x: model.x, y: model.y });
         };
 
         resizeModel();

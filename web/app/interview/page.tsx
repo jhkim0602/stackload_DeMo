@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { JobUrlInput } from "@/components/domains/interview/job-url-input";
 import { JobAnalysisResult } from "@/components/domains/interview/job-analysis-result";
@@ -16,12 +16,26 @@ export default function InterviewPage() {
   const [viewState, setViewState] = useState<ViewState>("dashboard");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Clear session storage on mount to ensure fresh start
+  useEffect(() => {
+    sessionStorage.removeItem("interviewData");
+  }, []);
+
   const handleUrlSubmit = (url: string, resumeData?: any) => {
     setIsAnalyzing(true);
     // Simulate API call delay
     setTimeout(() => {
       setIsAnalyzing(false);
       setViewState("analysis_result");
+
+      // Save initial data to sessionStorage
+      const data = {
+        jdUrl: url,
+        resumeText: resumeData?.text || "",
+        // Note: File objects cannot be stored in sessionStorage directly.
+        // For this demo, we rely on text input or mock extraction.
+      };
+      sessionStorage.setItem("interviewData", JSON.stringify(data));
     }, 2500);
   };
 
@@ -30,6 +44,17 @@ export default function InterviewPage() {
   };
 
   const handleModeSelect = (mode: "video" | "pre-qna", personality: string) => {
+    // Update sessionStorage with selected mode
+    const stored = sessionStorage.getItem("interviewData");
+    if (stored) {
+      const data = JSON.parse(stored);
+      sessionStorage.setItem("interviewData", JSON.stringify({
+        ...data,
+        mode,
+        personality
+      }));
+    }
+
     if (mode === "video") {
       router.push(`/interview/room?personality=${personality}`);
     } else {
@@ -39,6 +64,7 @@ export default function InterviewPage() {
 
   const handleBackToDashboard = () => {
       setViewState("dashboard");
+      sessionStorage.removeItem("interviewData");
   };
 
   return (
