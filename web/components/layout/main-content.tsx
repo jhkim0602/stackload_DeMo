@@ -1,9 +1,9 @@
-import { BlogCard } from "@/components/domains/tech-blog/blog-card";
-import { BlogListItem } from "@/components/domains/tech-blog/blog-list-item";
+import { BlogCard } from "@/components/features/tech-blog/blog-card";
+import { BlogListItem } from "@/components/features/tech-blog/blog-list-item";
 
-import { ViewToggle } from "@/components/domains/tech-blog/view-toggle";
+import { ViewToggle } from "@/components/features/tech-blog/view-toggle";
 import { Button } from "@/components/ui/button";
-import { TagFilterBar } from "@/components/domains/tech-blog/tag-filter-bar";
+import { TagFilterBar } from "@/components/features/tech-blog/tag-filter-bar";
 import {
   TAG_FILTER_OPTIONS,
   type TagCategory,
@@ -11,7 +11,7 @@ import {
 import type { Blog } from "@/lib/supabase";
 import { ChevronLeft } from "lucide-react";
 
-import { BlogPagination } from "@/components/domains/tech-blog/blog-pagination";
+import { BlogPagination } from "@/components/features/tech-blog/blog-pagination";
 
 interface MainContentProps {
   blogs: Blog[];

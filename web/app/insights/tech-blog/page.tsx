@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Header } from "@/components/domains/tech-blog/header";
+import { Header } from "@/components/features/tech-blog/header";
 import { MainContent } from "@/components/layout/main-content";
-import { WeeklyPopular } from "@/components/domains/tech-blog/weekly-popular";
+import { WeeklyPopular } from "@/components/features/tech-blog/weekly-popular";
 import { Footer } from "@/components/layout/footer";
 import { useScrollToTop } from "@/hooks/use-scroll-to-top";
 import { useUrlFilters } from "@/hooks/use-url-filters";

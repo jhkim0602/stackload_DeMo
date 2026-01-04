@@ -8,9 +8,9 @@ import {
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { useEffect, useState, useRef, useCallback } from "react";
-import Live2DPlayer from "@/components/domains/interview/live2d-player";
-import { UserVideo } from "@/components/domains/interview/user-video";
-import { NonVerbalAnalyzer } from "@/components/domains/interview/non-verbal-analyzer";
+import Live2DPlayer from "@/components/features/interview/room/live2d-player";
+import { UserVideo } from "@/components/features/interview/room/user-video";
+import { NonVerbalAnalyzer } from "@/components/features/interview/room/non-verbal-analyzer";
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";

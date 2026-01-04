@@ -7,8 +7,8 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/auth/user-menu";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { isFlutterWebView } from "@/lib/webview-bridge";
-import { BlogTypeToggle } from "@/components/domains/tech-blog/blog-type-toggle";
-import { BlogSelector } from "@/components/domains/tech-blog/blog-selector";
+import { BlogTypeToggle } from "@/components/features/tech-blog/blog-type-toggle";
+import { BlogSelector } from "@/components/features/tech-blog/blog-selector";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import {
   NavigationMenu,
@@ -39,7 +39,7 @@ export function GlobalHeader() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-900/60 border-b border-slate-200/50 dark:border-slate-700/50 transition-colors duration-300">
-        <div className="container flex h-14 items-center justify-between px-4">
+        <div className="flex h-14 items-center justify-between px-4 md:px-8 w-full">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity mr-4">
               <span className="font-black text-xl text-slate-900 dark:text-white bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">

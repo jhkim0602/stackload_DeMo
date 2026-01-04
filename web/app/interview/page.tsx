@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { JobUrlInput } from "@/components/domains/interview/job-url-input";
-import { JobAnalysisResult } from "@/components/domains/interview/job-analysis-result";
-import { ModeSelection } from "@/components/domains/interview/mode-selection";
-import { InterviewDashboardCards } from "@/components/domains/interview/interview-dashboard-cards";
+import { JobUrlInput } from "@/components/features/interview/setup/job-url-input";
+import { JobAnalysisResult } from "@/components/features/interview/job-analysis-result";
+import { ModeSelection } from "@/components/features/interview/setup/mode-selection";
+import { InterviewDashboardCards } from "@/components/features/interview/interview-dashboard-cards";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, ChevronRight } from "lucide-react";
 

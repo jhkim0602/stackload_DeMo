@@ -7,7 +7,7 @@ import requests
 
 from src.core.config import RSS_FEEDS, SUPABASE_URL, SUPABASE_KEY, TAG_REQUEST_DELAY_MS
 from src.core.database import normalize_url, normalize_title, create_summary, extract_thumbnail
-from src.services.tagger import generate_tags_for_article, base_tags_from_feed_category
+from src.infra.tagger import generate_tags_for_article, base_tags_from_feed_category
 
 # Initialize Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

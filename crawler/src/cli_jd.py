@@ -1,6 +1,6 @@
 import sys
 import argparse
-from src.domains.job.crawler import crawl_job_description
+from src.domains.job_post.crawler import crawl_job_description
 
 def main():
     parser = argparse.ArgumentParser(description="StackLoad JD Crawler CLI")

@@ -1,4 +1,4 @@
-import InterviewLiveKit from "@/components/domains/interview/interview-livekit";
+import InterviewLiveKit from "@/components/features/interview/room/interview-livekit";
 
 export default function InterviewRoomPage() {
   return (

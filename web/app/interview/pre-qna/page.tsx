@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, User, Sparkles } from "lucide-react";
 import { MOCK_INTERVIEW_QUESTIONS } from "@/mocks/interview-data";
 import { useRouter } from "next/navigation";
-import { FeedbackReport } from "@/components/domains/interview/feedback-report";
+import { FeedbackReport } from "@/components/features/interview/result/feedback-report";
 
 export default function PreQnAPage() {
   const router = useRouter();

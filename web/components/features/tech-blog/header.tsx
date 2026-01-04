@@ -1,7 +1,7 @@
 "use client";
 
-import { BlogTypeToggle } from "@/components/domains/tech-blog/blog-type-toggle";
-import { BlogSelector } from "@/components/domains/tech-blog/blog-selector";
+import { BlogTypeToggle } from "@/components/features/tech-blog/blog-type-toggle";
+import { BlogSelector } from "@/components/features/tech-blog/blog-selector";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/auth/user-menu";
 import { isFlutterWebView } from "@/lib/webview-bridge";
