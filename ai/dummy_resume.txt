@@ -1,0 +1,9 @@
+
+junghwan kim
+Software Engineer
+Skilled in Python, TypeScript, React, and AI.
+Experience:
+- Frontend Developer at Tech Corp (2020-2022)
+- AI Engineer at StartUp Inc (2022-Present)
+Education:
+- BS Computer Science, University of Examples.
