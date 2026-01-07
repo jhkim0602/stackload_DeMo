@@ -16,7 +16,7 @@ interface TeamChatProps {
 }
 
 export function TeamChat({ projectId, channelName = 'general' }: TeamChatProps) {
-  const { projects, messages, sendMessage } = useWorkspaceStore();
+  const { projects, messages, sendMessage, setActiveTaskId } = useWorkspaceStore();
   const project = projects.find(p => p.id === projectId);
 
   // Filter messages for this channel
@@ -39,6 +39,39 @@ export function TeamChat({ projectId, channelName = 'general' }: TeamChatProps) 
   };
 
   const getMember = (id: string) => project?.members.find(m => m.id === id);
+
+  const parseContent = (content: string) => {
+    const regex = /\[#(.*?):(.*?)\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index));
+      }
+      const taskId = match[1];
+      const taskTitle = match[2];
+
+      parts.push(
+        <button
+          key={match.index}
+          onClick={() => setActiveTaskId(taskId)}
+          className="text-primary hover:underline font-medium inline-flex items-center gap-1 bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+        >
+          <Hash className="h-3 w-3" />
+          {taskTitle}
+        </button>
+      );
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
+  };
 
   return (
     <div className="flex flex-col h-full bg-background relative" style={{ height: 'calc(100vh - 4rem)' }}>
@@ -90,7 +123,7 @@ export function TeamChat({ projectId, channelName = 'general' }: TeamChatProps) 
                             <span className="font-semibold text-sm">{member?.name || 'Unknown'}</span>
                             <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
                          </div>
-                         <p className="text-sm mt-1 text-foreground/90 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                         <p className="text-sm mt-1 text-foreground/90 leading-relaxed whitespace-pre-wrap">{parseContent(msg.content)}</p>
                       </div>
                    </div>
                  );

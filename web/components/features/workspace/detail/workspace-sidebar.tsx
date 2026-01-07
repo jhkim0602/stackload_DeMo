@@ -20,7 +20,6 @@ export function WorkspaceSidebar({ projectId, activeTab, onTabChange }: Workspac
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'board', label: 'Board', icon: Kanban },
-    { id: 'schedule', label: 'Schedule', icon: Calendar },
     { id: 'docs', label: 'Documents', icon: FileText },
     { id: 'ideas', label: 'Ideas', icon: Lightbulb },
   ];
@@ -42,7 +41,7 @@ export function WorkspaceSidebar({ projectId, activeTab, onTabChange }: Workspac
         </div>
       </div>
 
-      <div className="flex-1 py-4 px-2 space-y-1">
+      <div className="py-2 px-2 space-y-1">
         {navItems.map((item) => (
           <Button
             key={item.id}
@@ -60,7 +59,7 @@ export function WorkspaceSidebar({ projectId, activeTab, onTabChange }: Workspac
 
       </div>
 
-      <div className="flex-1 py-4 px-2 space-y-6 overflow-y-auto">
+      <div className="flex-1 pt-0 px-2 space-y-4 overflow-y-auto">
         {/* Personal Zone */}
         <div>
            <div className="px-2 mb-1 text-xs font-semibold text-muted-foreground uppercase">Personal</div>

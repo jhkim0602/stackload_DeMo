@@ -1,0 +1,13 @@
+{
+  "name": "workspace-server",
+  "version": "1.0.0",
+  "description": "Real-time collaboration server for StackLoad",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "dev": "nodemon src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -100,7 +100,7 @@ export function TaskCard({
         case 'dueDate':
            if (!showDueDate || !task.dueDate) return null;
            return (
-              <div key={key} className={`flex items-center text-xs mb-1.5 ${new Date(task.dueDate) < new Date() ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+              <div key={key} className={`flex items-center text-xs mb-1.5 ${new Date(task.dueDate) < new Date() ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
                  <CalendarIcon className="h-3 w-3 mr-1" />
                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' })}
               </div>

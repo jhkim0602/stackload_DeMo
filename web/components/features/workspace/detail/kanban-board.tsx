@@ -14,7 +14,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 // AdvancedTaskModal import removed
 import { SmartTagPicker } from "../modules/tag/picker";
-import { Plus, MessageSquare, CheckSquare, MoreHorizontal, Pen, Trash, Users, KanbanSquare, Settings2, Layout, PlusCircle, List, Calendar as CalendarIcon, Tag as TagIcon, GripVertical } from "lucide-react";
+import { Plus, MessageSquare, CheckSquare, MoreHorizontal, Pen, Trash, Users, KanbanSquare, Settings2, Layout, PlusCircle, List, Calendar as CalendarIcon, Tag as TagIcon, GripVertical, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -48,7 +48,7 @@ interface KanbanBoardProps {
 // DraggablePropertySettings moved to ../modules/view-settings/property-settings
 
 export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
-  const { tasks, projects, createTask, updateTaskStatus, updateTask, addColumnToView, renameColumnInView, deleteColumnFromView, updateColumnInView, moveColumnInView, tags, updateViewCardProperties } = useWorkspaceStore();
+  const { tasks, projects, createTask, updateTaskStatus, updateTask, addColumnToView, renameColumnInView, deleteColumnFromView, updateColumnInView, moveColumnInView, tags, updateViewCardProperties, activeTaskId, setActiveTaskId } = useWorkspaceStore();
   const project = projects.find(p => p.id === projectId);
 
   // View Settings State
@@ -69,7 +69,6 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
   const [activeViewId, setActiveViewId] = useState<string>(
      project?.views[0]?.id || ''
   );
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   // Active View Logic
   const activeView = useMemo(() => {
@@ -171,6 +170,12 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                   {groupBy === 'status' ? '진행 상태 칸반보드' : '담당자별 칸반보드'}
                   <Badge variant="secondary" className="font-normal text-muted-foreground ml-2">{projectTasks.length}개</Badge>
                 </h2>
+                {projectTasks.length >= 450 && (
+                  <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 animate-pulse">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm font-medium">태스크 생성 제한(500개)에 근접했습니다 ({projectTasks.length}/500)</span>
+                  </div>
+                )}
              </div>
 
              <div className="flex items-center gap-2">
@@ -320,7 +325,10 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                              defaultProps.status = 'todo';
                              if (col.id !== 'unassigned') defaultProps.assignee = col.title;
                            }
-                           createTask(defaultProps);
+                           const newTaskId = createTask(defaultProps);
+                           if (newTaskId) {
+                               setActiveTaskId(newTaskId);
+                           }
                        }}
                        onRename={(newTitle) => activeView ? renameColumnInView(activeView.id, col.id, newTitle) : null}
                        onUpdate={(updates) => activeView ? updateColumnInView(activeView.id, col.id, updates) : null}
@@ -331,19 +339,7 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                  })}
                </SortableContext>
 
-              {/* Add Column Shortcut (visible at end of list) */}
-              {groupBy === 'status' && (
-                 <div className="min-w-[100px] flex-shrink-0 pt-2 opacity-0 hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-foreground"
-                      onClick={() => setIsAddingColumn(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> 그룹 추가
-                    </Button>
-                 </div>
-              )}
+
             </div>
 
             <DragOverlay>
@@ -358,18 +354,35 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                      showDueDate={showDueDate}
                    />
                ) : activeColumn ? (
-                  <div className="w-[300px] h-full opacity-50 bg-background border rounded-lg shadow-xl p-4">
-                     <h3 className="font-medium text-sm">{activeColumn.title} (Moving...)</h3>
-                  </div>
+                  <KanbanColumn
+                     id={activeColumn.id}
+                     column={activeColumn}
+                     title={activeColumn.title}
+                     color={('color' in activeColumn) ? activeColumn.color : undefined}
+                     tasks={projectTasks.filter(t => {
+                       if (groupBy === 'status') {
+                          if ('statusId' in activeColumn) return t.status === activeColumn.statusId;
+                          return t.status === activeColumn.id;
+                       }
+                       if (activeColumn.id === 'unassigned') return !t.assignee || t.assignee === 'unassigned';
+                       return t.assignee === activeColumn.title;
+                     })}
+                     customFields={project.customFields || []}
+                     groupBy={groupBy}
+                     icon={('avatar' in activeColumn) ? activeColumn.avatar as string : undefined}
+                     // Pass dummy handlers for overlay
+                     onTaskClick={() => {}}
+                     onCreateTask={() => {}}
+                     onRename={() => {}}
+                     onUpdate={() => {}}
+                     onDelete={() => {}}
+                     viewSettings={{ showTags, showAssignee, showBadges, showDueDate }}
+                     isOverlay
+                     className="rotate-2 scale-105 shadow-2xl opacity-90 ring-1 ring-primary/20"
+                  />
                ) : null}
             </DragOverlay>
           </DndContext>
-
-          {/* Task Detail Modal */}
-          <TaskDetailModal
-             taskId={activeTaskId}
-             onClose={() => setActiveTaskId(null)}
-          />
        </div>
 
        {/* Right-Side Notebook Tabs */}

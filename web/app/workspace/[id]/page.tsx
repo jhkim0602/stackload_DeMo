@@ -13,10 +13,13 @@ import { TeamChat } from "@/components/features/workspace/detail/chat/team-chat"
 import { LiveHuddle } from "@/components/features/workspace/detail/huddle/live-huddle";
 import { UnifiedInbox } from "@/components/features/workspace/personal/unified-inbox";
 import { MyBriefcase } from "@/components/features/workspace/personal/my-briefcase";
+import { TaskDetailModal } from "@/components/features/workspace/modules/task/detail-modal";
+import { useWorkspaceStore } from "@/components/features/workspace/store/mock-data";
 
 export default function WorkspaceDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
+  const { activeTaskId, setActiveTaskId } = useWorkspaceStore();
   const [activeTab, setActiveTab] = useState('overview');
 
   const renderContent = () => {
@@ -60,6 +63,11 @@ export default function WorkspaceDetailPage() {
           {renderContent()}
         </main>
       </div>
+
+      <TaskDetailModal
+        taskId={activeTaskId}
+        onClose={() => setActiveTaskId(null)}
+      />
     </SidebarLayout>
   );
 }

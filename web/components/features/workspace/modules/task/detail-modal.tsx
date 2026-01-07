@@ -23,18 +23,12 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
-  const { tasks, updateTask, tags, projects } = useWorkspaceStore();
+  const { tasks, updateTask, tags, projects, addComment } = useWorkspaceStore();
   const task = tasks.find(t => t.id === taskId);
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
+  const [newComment, setNewComment] = useState("");
 
-  // Local state for immediate feedback
-  useEffect(() => {
-     if (task) {
-        setTitle(task.title);
-        setDescription(task.description || "");
-     }
-  }, [task]);
 
   if (!task) return null;
 
@@ -58,7 +52,7 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
 
   return (
     <Dialog open={!!taskId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl h-[85vh] p-0 gap-0 overflow-hidden flex flex-col bg-background shadow-lg">
+      <DialogContent className="fixed left-[50%] top-[50%] z-50 w-full translate-x-[-50%] translate-y-[-50%] border duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-3xl h-[85vh] p-0 gap-0 overflow-hidden flex flex-col bg-background shadow-lg">
          <DialogHeader className="sr-only">
             <DialogTitle>Task Details</DialogTitle>
          </DialogHeader>
@@ -211,19 +205,100 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                      />
                   </div>
 
-                  {/* Subtasks Removed */}{/* Accessability / Subtasks Placeholder Removed */}
 
-                  <div className="space-y-4">
+
+                   <Separator />
+
+                   {/* Comments */}
+                   <div className="space-y-4">
+                      <div className="font-semibold flex items-center gap-2">
+                         <MessageSquare className="h-4 w-4 text-muted-foreground" /> 댓글 ({task.comments.length})
+                      </div>
+                      <div className="space-y-4">
+                         {task.comments.map(comment => (
+                            <div key={comment.id} className="flex gap-3">
+                               <Avatar className="h-8 w-8 mt-0.5">
+                                  <AvatarFallback className="text-[10px]">U</AvatarFallback>
+                               </Avatar>
+                               <div className="flex-1 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                     <span className="text-xs font-semibold">User</span>
+                                     <span className="text-[10px] text-muted-foreground">{format(new Date(comment.createdAt), "MM월 dd일 HH:mm")}</span>
+                                  </div>
+                                  <div className="text-sm bg-muted/30 p-3 rounded-lg border">
+                                     {comment.content}
+                                  </div>
+                               </div>
+                            </div>
+                         ))}
+                         <div className="flex gap-3 mt-4">
+                            <Avatar className="h-8 w-8 mt-0.5">
+                               <AvatarFallback className="text-[10px]">U</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-2">
+                               <Textarea
+                                  placeholder="댓글을 입력하세요... (Command + Enter로 전송)"
+                                  value={newComment}
+                                  onChange={(e) => setNewComment(e.target.value)}
+                                  onKeyDown={(e) => {
+                                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && newComment.trim()) {
+                                        addComment(task.id, newComment);
+                                        setNewComment("");
+                                     }
+                                  }}
+                                  className="min-h-[80px] text-sm resize-none bg-muted/10"
+                               />
+                               <Button
+                                  size="sm"
+                                  onClick={() => {
+                                     if (newComment.trim()) {
+                                        addComment(task.id, newComment);
+                                        setNewComment("");
+                                     }
+                                  }}
+                                  disabled={!newComment.trim()}
+                               >
+                                  댓글 작성
+                               </Button>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <Separator />
+
+                   {/* Activity Log */}
+                   <div className="space-y-4">
+                      <div className="font-semibold flex items-center gap-2">
+                         <Clock className="h-4 w-4 text-muted-foreground" /> 활동 기록
+                      </div>
+                      <div className="space-y-3 pl-2 border-l-2 border-muted ml-2">
+                         {task.history.slice().reverse().map(event => (
+                            <div key={event.id} className="relative pl-6 pb-2">
+                               <div className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-background border-2 border-muted" />
+                               <div className="text-xs">
+                                  <span className="font-medium">User</span>
+                                  <span className="text-muted-foreground ml-1">{event.action}</span>
+                               </div>
+                               <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  {format(new Date(event.timestamp), "yyyy-MM-dd HH:mm")}
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+                   </div>
+
+                   <div className="space-y-4">
                       <div className="font-semibold flex items-center gap-2">
                          <Paperclip className="h-4 w-4 text-muted-foreground" /> 첨부 파일
                       </div>
                       <div className="h-24 border-2 border-dashed rounded-lg flex items-center justify-center text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors">
                          파일을 드래그하여 업로드하거나 클릭하세요
                       </div>
-                  </div>
+                   </div>
 
-               </div>
-            </ScrollArea>
+                </div>
+             </ScrollArea>
 
             {/* Sidebar (Optional - Activity Log, etc) - Hidden for now to simplify */}
 

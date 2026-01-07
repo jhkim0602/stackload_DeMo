@@ -113,9 +113,9 @@ export function SmartInput({ value, onChange, onEnter, placeholder, className, m
                  </CommandItem>
                ))}
                {triggerType === 'task' && tasks.map(task => (
-                 <CommandItem key={task.id} onSelect={() => insertTag(`#${task.title}`)}>
+                 <CommandItem key={task.id} onSelect={() => insertTag(`[#${task.id}:${task.title}]`)}>
                    <Hash className="h-4 w-4 mr-2" />
-                   {task.title.substring(0, 15)}...
+                   {task.title}
                  </CommandItem>
                ))}
              </CommandGroup>

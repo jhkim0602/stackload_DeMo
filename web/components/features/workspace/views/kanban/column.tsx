@@ -42,11 +42,14 @@ interface KanbanColumnProps {
   onUpdate?: (updates: { title?: string, color?: string }) => void;
   onDelete: () => void;
   viewSettings: { showTags: boolean, showAssignee: boolean, showBadges: boolean, showDueDate: boolean };
+  isOverlay?: boolean;
+  className?: string; // For overriding styles (e.g. rotation)
 }
 
 export function KanbanColumn({
   id, column, title, color, tasks, customFields, groupBy, icon,
-  onTaskClick, onCreateTask, onRename, onUpdate, onDelete, viewSettings
+  onTaskClick, onCreateTask, onRename, onUpdate, onDelete, viewSettings,
+  isOverlay, className
 }: KanbanColumnProps) {
   const {
     setNodeRef,
@@ -95,10 +98,26 @@ export function KanbanColumn({
      );
   }
 
+  // Extract basic color name (e.g. 'red', 'blue') from 'bg-red-500'
+  const colorName = color ? color.replace('bg-', '').replace('-500', '') : 'gray';
+
+  // Apply Soft Tint Logic
+  const bgClass = color
+    ? `bg-${colorName}-100/40 dark:bg-${colorName}-900/20`
+    : 'bg-muted/40'; // Default background for columns without color
+
   return (
-    <div ref={setNodeRef} style={style} className="flex-1 min-w-[300px] max-w-[300px] flex flex-col h-full flex-shrink-0 group/column relative">
-       {/* Color Indicator (Top Line) */}
-       {color && <div className={cn("absolute top-0 left-1 right-1 h-0.5 rounded-full", color.replace('bg-', 'bg-').replace('500', '400'))} />}
+    <div
+       ref={setNodeRef}
+       style={style}
+       className={cn(
+          "flex-1 min-w-[300px] max-w-[300px] flex flex-col h-full flex-shrink-0 group/column relative rounded-2xl transition-colors duration-300",
+          bgClass,
+          isOverlay && "cursor-grabbing z-50", // Overlay specific styles
+          className
+       )}
+    >
+
 
        {/* Column Header - Draggable Handle */}
        <div
@@ -193,7 +212,7 @@ export function KanbanColumn({
        </div>
 
        {/* Column Body */}
-       <div className="flex-1 space-y-3 overflow-y-auto min-h-[100px] pb-4 px-1 scrollbar-none">
+       <div className="flex-1 space-y-3 overflow-y-auto min-h-[100px] px-3 pb-3 scrollbar-none">
           <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             {tasks.map(task => (
               <DraggableTaskCard

@@ -35,6 +35,8 @@ from .analysis.non_verbal import NonVerbalAggregator
 from .analysis.data_models import NonVerbalData
 
 
+
+
 class MessageType(Enum):
     """Enum for WebSocket message types"""
 
@@ -50,6 +52,7 @@ class MessageType(Enum):
     CONTROL = ["interrupt-signal", "audio-play-start"]
     DATA = ["mic-audio-data"]
     SESSION = ["init-interview-session"]
+
 
 
 class WSMessage(TypedDict, total=False):
@@ -113,6 +116,7 @@ class WebSocketHandler:
             "init-interview-session": self._handle_init_interview_session,
             "update-interview-phase": self._handle_update_interview_phase,
             "behavior-data": self._handle_behavior_data,
+
         }
 
     async def handle_new_connection(
@@ -784,4 +788,6 @@ class WebSocketHandler:
                 )
         except Exception as e:
             logger.error(f"Error processing behavior data: {e}")
+
+
 

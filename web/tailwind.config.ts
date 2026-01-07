@@ -8,6 +8,12 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "*.{js,ts,jsx,tsx,mdx}"
   ],
+  safelist: [
+    {
+      pattern: /(bg|text|border)-(gray|red|orange|amber|green|emerald|teal|cyan|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|400|500|900)/,
+      variants: ['dark', 'hover'],
+    },
+  ],
   theme: {
   	extend: {
   		colors: {

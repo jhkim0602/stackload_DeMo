@@ -29,11 +29,6 @@ export interface ActivityLog {
   timestamp: string;
 }
 
-export interface SubTask {
-  id: string;
-  title: string;
-  completed: boolean;
-}
 
 export type TaskStatus = string;
 
@@ -49,8 +44,9 @@ export interface Task {
   customFieldValues: TaskFieldValue[];
   comments: Comment[];
   history: ActivityLog[];
-  subtasks: SubTask[];
+
   tags?: string[]; // Array of Tag IDs
+  subtasks?: { id: string; title: string; completed: boolean }[];
 }
 
 // --- Chat & System Messages (New) ---
@@ -211,23 +207,27 @@ export const MOCK_PROJECTS: Project[] = [
 const INITIAL_TASKS: Task[] = [
   {
     id: 't-1', projectId: 'p-1', title: '기획서 초안 작성', status: 'done', assignee: 'Junghwan', dueDate: '2025-01-10',
-    customFieldValues: [{ fieldId: 'cf-1', value: 'High' }], comments: [], history: [], subtasks: []
+    customFieldValues: [{ fieldId: 'cf-1', value: 'High' }], comments: [], history: []
   },
   {
     id: 't-2', projectId: 'p-1', title: 'API 명세서 정리', status: 'in-progress', assignee: 'Junghwan', dueDate: '2025-01-12', docRef: 'd-1',
     customFieldValues: [{ fieldId: 'cf-1', value: 'High' }, { fieldId: 'cf-2', value: 5 }],
     comments: [{ id: 'c-1', authorId: 'u2', content: 'REST API 구조 확인해주세요.', createdAt: '2025-01-11T10:00:00Z' }],
-    history: [{ id: 'h-1', userId: 'u1', action: 'moved to In Progress', timestamp: '2025-01-11T09:00:00Z' }],
-    subtasks: [{ id: 'st-1', title: 'User Endpoints', completed: true }, { id: 'st-2', title: 'Auth Endpoints', completed: false }]
+    history: [{ id: 'h-1', userId: 'u1', action: 'moved to In Progress', timestamp: '2025-01-11T09:00:00Z' }]
   },
   {
     id: 't-3', projectId: 'p-1', title: '로그인 페이지 UI 구현', status: 'todo', assignee: 'Frontend', dueDate: '2025-01-15',
-    customFieldValues: [{ fieldId: 'cf-1', value: 'Medium' }], comments: [], history: [], subtasks: []
+    customFieldValues: [{ fieldId: 'cf-1', value: 'Medium' }], comments: [], history: []
   },
 ];
 
 const INITIAL_DOCS: Doc[] = [
-  { id: 'd-1', projectId: 'p-1', title: 'API Specification v1.0', updatedAt: '2025-01-05', content: [{ type: 'paragraph', content: 'Specs...' }] }
+  { id: 'd-1', projectId: 'p-1', title: 'API Specification v1.0', updatedAt: '2025-01-05', content: [{ type: 'paragraph', content: 'Specs...' }] },
+  // Add some templates to existing project for demo
+  { id: 'd-2', projectId: 'p-1', title: '📝 1. Product Requirements Document (PRD)', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'Product Requirements Document' }, { type: 'paragraph', content: 'This is a template for PRD.' }] },
+  { id: 'd-3', projectId: 'p-1', title: '📅 2. Project Roadmap', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'Project Roadmap' }] },
+  { id: 'd-4', projectId: 'p-1', title: '🏗️ 3. Tech Architecture', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'System Architecture' }] },
+  { id: 'd-5', projectId: 'p-1', title: '🤝 4. Team Ground Rules', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'Team Ground Rules' }] }
 ];
 
 const INITIAL_NOTIFICATIONS: Notification[] = [
@@ -241,6 +241,73 @@ const INITIAL_PRIVATE_DOCS: PrivateDoc[] = [
 const INITIAL_MESSAGES: ChannelMessage[] = [
   { id: 'm-1', channelId: 'general', senderId: 'u1', type: 'user', content: 'Welcome to the team chat!', timestamp: '10:00 AM' },
   { id: 'm-2', channelId: 'general', senderId: 'u2', type: 'user', content: 'Thanks! Excited to work on this.', timestamp: '10:05 AM' },
+];
+
+// --- Template Generators ---
+
+const generateTemplates = (projectId: string): Doc[] => [
+  {
+    id: `d-${Date.now()}-1`,
+    projectId,
+    title: '📝 1. Product Requirements Document (PRD)',
+    updatedAt: new Date().toISOString(),
+    content: [
+      { type: 'heading', content: '🚀 Product Requirements Document', props: { level: 1 } },
+      { type: 'paragraph', content: '프로젝트의 핵심 목표와 기능을 정의하는 문서입니다.' },
+      { type: 'heading', content: '1. 배경 및 목적 (Background & Goals)', props: { level: 2 } },
+      { type: 'bulletListItem', content: '문제 정의: ' },
+      { type: 'bulletListItem', content: '해결 방안: ' },
+      { type: 'heading', content: '2. 타겟 유저 (Target User)', props: { level: 2 } },
+      { type: 'bulletListItem', content: '페르소나 A: ' },
+      { type: 'heading', content: '3. 핵심 기능 (Core Features - MVP)', props: { level: 2 } },
+      { type: 'checkListItem', content: '회원가입/로그인' },
+      { type: 'checkListItem', content: '메인 대시보드' },
+    ]
+  },
+  {
+    id: `d-${Date.now()}-2`,
+    projectId,
+    title: '📅 2. Project Roadmap',
+    updatedAt: new Date().toISOString(),
+    content: [
+      { type: 'heading', content: '📅 Project Schedule & Milestones', props: { level: 1 } },
+      { type: 'heading', content: '1주차: 기획 및 설계', props: { level: 2 } },
+      { type: 'bulletListItem', content: 'Day 1: 아이디어 확정' },
+      { type: 'bulletListItem', content: 'Day 2: 와이어프레임 & ERD 설계' },
+      { type: 'heading', content: '2주차: 핵심 기능 개발', props: { level: 2 } },
+      { type: 'bulletListItem', content: 'Day 1: 개발 환경 세팅' },
+    ]
+  },
+  {
+    id: `d-${Date.now()}-3`,
+    projectId,
+    title: '🏗️ 3. Tech Architecture',
+    updatedAt: new Date().toISOString(),
+    content: [
+      { type: 'heading', content: '🏗️ Technical Architecture Spec', props: { level: 1 } },
+      { type: 'heading', content: 'Frontend Stack', props: { level: 2 } },
+      { type: 'bulletListItem', content: 'Framework: Next.js 14' },
+      { type: 'bulletListItem', content: 'Styling: Tailwind CSS' },
+      { type: 'heading', content: 'Backend Stack', props: { level: 2 } },
+      { type: 'bulletListItem', content: 'Language: Python / Node.js' },
+      { type: 'bulletListItem', content: 'Database: Supabase (PostgreSQL)' },
+    ]
+  },
+  {
+    id: `d-${Date.now()}-4`,
+    projectId,
+    title: '🤝 4. Team Ground Rules',
+    updatedAt: new Date().toISOString(),
+    content: [
+      { type: 'heading', content: '🤝 Team Ground Rules', props: { level: 1 } },
+      { type: 'heading', content: 'Communication', props: { level: 2 } },
+      { type: 'bulletListItem', content: '모든 회의록은 Docs에 남긴다.' },
+      { type: 'bulletListItem', content: 'Slack 응답은 1시간 이내에.' },
+      { type: 'heading', content: 'Git Convention', props: { level: 2 } },
+      { type: 'bulletListItem', content: 'feat: 새로운 기능 추가' },
+      { type: 'bulletListItem', content: 'fix: 버그 수정' },
+    ]
+  }
 ];
 
 // --- Store ---
@@ -265,17 +332,17 @@ export interface WorkspaceStore {
   privateDocs: PrivateDoc[];
   messages: ChannelMessage[];
   tags: Tag[];
+  activeTaskId: string | null;
+  setActiveTaskId: (id: string | null) => void;
 
   // Actions
   createProject: (project: Omit<Project, 'id' | 'lastActive' | 'customFields' | 'views'>) => void;
 
   // Task Actions (with Side-Effects)
-  createTask: (task: Omit<Task, 'id' | 'comments' | 'history' | 'subtasks'>) => void;
+  createTask: (task: Omit<Task, 'id' | 'comments' | 'history' | 'subtasks'>) => string | null;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   addComment: (taskId: string, content: string) => void;
-  addSubTask: (taskId: string, title: string) => void;
-  toggleSubTask: (taskId: string, subTaskId: string) => void;
 
   // Doc Actions
   createDoc: (doc: Omit<Doc, 'id' | 'updatedAt'>) => void;
@@ -315,16 +382,19 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   privateDocs: INITIAL_PRIVATE_DOCS,
   messages: INITIAL_MESSAGES,
   tags: INITIAL_TAGS,
+  activeTaskId: null,
+  setActiveTaskId: (id) => set({ activeTaskId: id }),
 
-  createProject: (project) => set((state) => ({
-    projects: [...state.projects, {
+  createProject: (project) => set((state) => {
+    const newProjectId = `p-${Date.now()}`;
+    const newProject: Project = {
        ...project,
-       id: `p-${Date.now()}`,
+       id: newProjectId,
        lastActive: '방금 전',
        customFields: [],
        views: [{
           id: `v-${Date.now()}`,
-          projectId: `p-${Date.now()}`,
+          projectId: newProjectId,
           name: '메인 보드',
           type: 'kanban',
           groupBy: 'status',
@@ -333,12 +403,30 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
              { id: 'done', title: '완료', statusId: 'done' }
           ]
        }]
-    }]
-  })),
+    };
+
+    const newDocs = generateTemplates(newProjectId);
+
+    return {
+      projects: [...state.projects, newProject],
+      docs: [...state.docs, ...newDocs]
+    };
+  }),
 
   createTask: (task) => {
+    const currentTasks = get().tasks;
+    const projectTaskCount = currentTasks.filter(t => t.projectId === task.projectId).length;
+
+    if (projectTaskCount >= 500) {
+      alert("⚠️ 한 프로젝트당 최대 500개의 태스크만 생성할 수 있습니다. (성능 보호)");
+      return null;
+    }
+
+    const newTaskId = `t-${Date.now()}`;
+    const newTask: Task = { ...task, id: newTaskId, comments: [], history: [] };
+
     set((state) => ({
-      tasks: [...state.tasks, { ...task, id: `t-${Date.now()}`, comments: [], history: [], subtasks: [] }]
+      tasks: [...state.tasks, newTask]
     }));
     // Side Effect: Notify if assigned
     if (task.assignee === 'Junghwan') {
@@ -346,6 +434,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     }
     // Side Effect: System Message
     get().sendMessage('general', `New task created: **${task.title}**`, 'system', 'system');
+
+    return newTaskId;
   },
 
   updateTaskStatus: (taskId, status) => {
@@ -382,23 +472,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     })
   })),
 
-  addSubTask: (taskId, title) => set((state) => ({
-    tasks: state.tasks.map(t => {
-       if (t.id === taskId) {
-         return { ...t, subtasks: [...t.subtasks, { id: `st-${Date.now()}`, title, completed: false }] };
-       }
-       return t;
-    })
-  })),
 
-  toggleSubTask: (taskId, subTaskId) => set((state) => ({
-     tasks: state.tasks.map(t => {
-        if (t.id === taskId) {
-           return { ...t, subtasks: t.subtasks.map(st => st.id === subTaskId ? { ...st, completed: !st.completed } : st) };
-        }
-        return t;
-     })
-  })),
 
   deleteTask: (taskId) => set((state) => ({
     tasks: state.tasks.filter(t => t.id !== taskId)
