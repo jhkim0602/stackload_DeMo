@@ -23,8 +23,9 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
-  const { tasks, updateTask, tags, projects, addComment } = useWorkspaceStore();
+  const { tasks, updateTask, tags, priorities, projects, addComment } = useWorkspaceStore();
   const task = tasks.find(t => t.id === taskId);
+  const taskPriority = priorities.find(p => p.id === task?.priorityId);
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
   const [newComment, setNewComment] = useState("");
@@ -152,6 +153,48 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                         </Popover>
                      </div>
 
+                     {/* Priority */}
+                     <div className="text-muted-foreground flex items-center gap-2">
+                        <Clock className="h-4 w-4" /> 우선순위
+                     </div>
+                     <div className="flex items-center">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className={cn(
+                                    "h-7 px-1.5 -ml-1.5 font-normal hover:bg-muted text-muted-foreground hover:text-foreground justify-start text-left",
+                                    !task.priorityId && "text-muted-foreground/50",
+                                    taskPriority && taskPriority.color
+                                )}>
+                                    {taskPriority ? taskPriority.name : "설정 안 함"}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[120px] p-1" align="start">
+                                <div className="space-y-1">
+                                    {priorities.map((p) => (
+                                        <div
+                                            key={p.id}
+                                            className={cn(
+                                                "px-2 py-1.5 text-xs rounded cursor-pointer hover:bg-muted font-medium",
+                                                task.priorityId === p.id && "bg-muted"
+                                            )}
+                                            onClick={() => updateTask(task.id, { priorityId: p.id })}
+                                        >
+                                           <Badge variant="outline" className={cn("font-normal border-0 px-1 py-0 mr-1.5", p.color)}>
+                                               {p.name}
+                                           </Badge>
+                                        </div>
+                                    ))}
+                                    <div
+                                        className="px-2 py-1.5 text-xs rounded cursor-pointer hover:bg-muted font-medium text-muted-foreground"
+                                        onClick={() => updateTask(task.id, { priorityId: undefined })}
+                                    >
+                                       설정 안 함
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                     </div>
+
                      {/* Tags */}
                      <div className="text-muted-foreground flex items-center gap-2">
                         <Tag className="h-4 w-4" /> 태그
@@ -160,8 +203,12 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                         {task.tags?.map(tagId => {
                            const tag = tags.find(t => t.id === tagId);
                            if (!tag) return null;
+                           const isLegacy = tag.color.includes('bg-');
+                           const bgClass = isLegacy ? tag.color.replace('500', '100') : `bg-${tag.color}-100`;
+                           const textClass = isLegacy ? tag.color.replace('bg-', 'text-').replace('500', '700') : `text-${tag.color}-700`;
+
                            return (
-                              <Badge key={tag.id} variant="secondary" className={cn("font-normal px-1.5 h-6", tag.color.replace('500', '100'), tag.color.replace('bg-', 'text-').replace('500', '700'))}>
+                              <Badge key={tag.id} variant="secondary" className={cn("font-normal px-1.5 h-6", bgClass, textClass)}>
                                  {tag.name}
                                  <X
                                     className="h-3 w-3 ml-1 cursor-pointer opacity-50 hover:opacity-100"

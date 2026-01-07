@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { MoreHorizontal, Pen, Trash, Plus } from "lucide-react";
 import { useState } from "react";
 
-export type GroupBy = 'status' | 'assignee';
+export type GroupBy = 'status' | 'assignee' | 'priority' | 'dueDate' | 'tag';
 
 const COLUMN_COLORS = [
   'bg-gray-500', 'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-green-500',
@@ -41,15 +41,16 @@ interface KanbanColumnProps {
   onRename: (title: string) => void;
   onUpdate?: (updates: { title?: string, color?: string }) => void;
   onDelete: () => void;
-  viewSettings: { showTags: boolean, showAssignee: boolean, showBadges: boolean, showDueDate: boolean };
+  viewSettings: { showTags: boolean, showAssignee: boolean, showDueDate: boolean, showPriority: boolean, cardProperties?: string[] };
   isOverlay?: boolean;
   className?: string; // For overriding styles (e.g. rotation)
+  category?: 'todo' | 'in-progress' | 'done';
 }
 
 export function KanbanColumn({
   id, column, title, color, tasks, customFields, groupBy, icon,
   onTaskClick, onCreateTask, onRename, onUpdate, onDelete, viewSettings,
-  isOverlay, className
+  isOverlay, className, category
 }: KanbanColumnProps) {
   const {
     setNodeRef,
@@ -64,7 +65,7 @@ export function KanbanColumn({
       type: 'Column',
       column: column,
     },
-    disabled: groupBy !== 'status' // Disable reordering if not ungrouped by status
+    disabled: !['status', 'priority', 'tag'].includes(groupBy) // Enable reordering for specific groups
   });
 
   const style = {
@@ -88,34 +89,62 @@ export function KanbanColumn({
      }
   };
 
+  // Extract basic color name (e.g. 'red', 'blue') from 'bg-red-500'
+  const colorName = color ? color.replace('bg-', '').replace('-500', '') : 'gray';
+
   if (isDragging) {
      return (
         <div
            ref={setNodeRef}
            style={style}
-           className="flex-1 min-w-[300px] max-w-[300px] flex flex-col h-full flex-shrink-0 opacity-30 border-2 border-dashed border-primary/20 rounded-xl bg-muted/10 p-4"
-        />
+           className={cn(
+              "flex flex-col h-full w-[300px] min-w-[300px] rounded-xl border border-border/40 transition-colors duration-300 shadow-sm opacity-30",
+              colorName ? `bg-${colorName}-100/40 dark:bg-${colorName}-900/20` : "bg-muted/30"
+           )}
+        >
+            <div className="flex items-center justify-between mb-3 px-1 h-8 mt-1">
+               <div className="flex items-center gap-2 w-full px-1">
+                 {icon ? (
+                    <Avatar className="h-5 w-5">
+                       <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{icon}</AvatarFallback>
+                    </Avatar>
+                  ) : (
+                     <div className={cn(
+                        "h-2.5 w-2.5 rounded-full shrink-0",
+                        category === 'todo' ? "bg-slate-500" :
+                        category === 'in-progress' ? "bg-blue-500" :
+                        category === 'done' ? "bg-green-500" :
+                        (colorName ? `bg-${colorName}-500` : "bg-muted-foreground/30")
+                     )} />
+                  )}
+                  <div className="flex items-center gap-2 truncate flex-1">
+                       <h3 className="font-medium text-sm text-foreground/80 truncate">{title}</h3>
+                       <span className="text-xs text-muted-foreground">{tasks.length}</span>
+                  </div>
+               </div>
+            </div>
+            <div className="flex-1 space-y-3 overflow-y-auto min-h-[100px] px-3 pb-3">
+               {/* Skeleton items to mimic content */}
+               {tasks.slice(0, 3).map(t => (
+                   <div key={t.id} className="h-20 w-full bg-muted/20 rounded-lg border border-border/10" />
+               ))}
+            </div>
+        </div>
      );
   }
 
-  // Extract basic color name (e.g. 'red', 'blue') from 'bg-red-500'
-  const colorName = color ? color.replace('bg-', '').replace('-500', '') : 'gray';
 
-  // Apply Soft Tint Logic
-  const bgClass = color
-    ? `bg-${colorName}-100/40 dark:bg-${colorName}-900/20`
-    : 'bg-muted/40'; // Default background for columns without color
 
   return (
     <div
        ref={setNodeRef}
        style={style}
        className={cn(
-          "flex-1 min-w-[300px] max-w-[300px] flex flex-col h-full flex-shrink-0 group/column relative rounded-2xl transition-colors duration-300",
-          bgClass,
-          isOverlay && "cursor-grabbing z-50", // Overlay specific styles
-          className
-       )}
+          "flex flex-col h-full w-[300px] min-w-[300px] rounded-xl border border-border/40 transition-colors duration-300 shadow-sm",
+          colorName ? `bg-${colorName}-100/40 dark:bg-${colorName}-900/20` : "bg-muted/30",
+          isOverlay ? "cursor-grabbing z-50 ring-2 ring-primary/20 rotate-2 scale-105 shadow-2xl opacity-90" : "cursor-grab",
+          isOverlay && className // Allow overrides
+        )}
     >
 
 
@@ -132,7 +161,13 @@ export function KanbanColumn({
                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{icon}</AvatarFallback>
                </Avatar>
              ) : (
-                <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", color || "bg-muted-foreground/30")} />
+                <div className={cn(
+                   "h-2.5 w-2.5 rounded-full shrink-0",
+                   category === 'todo' ? "bg-slate-500" :
+                   category === 'in-progress' ? "bg-blue-500" :
+                   category === 'done' ? "bg-green-500" :
+                   (colorName ? `bg-${colorName}-500` : "bg-muted-foreground/30")
+                )} />
              )}
 
              {isEditing ? (
@@ -223,7 +258,7 @@ export function KanbanColumn({
                 {...viewSettings}
                 showTags={viewSettings.showTags}
                 showAssignee={viewSettings.showAssignee}
-                showBadges={viewSettings.showBadges}
+
                 showDueDate={viewSettings.showDueDate}
               />
             ))}

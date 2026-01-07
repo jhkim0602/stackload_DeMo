@@ -11,8 +11,9 @@ interface DraggableTaskCardProps {
   onClick: () => void;
   showTags: boolean;
   showAssignee: boolean;
-  showBadges: boolean;
+
   showDueDate: boolean;
+  cardProperties?: string[];
 }
 
 export function DraggableTaskCard({
@@ -21,9 +22,10 @@ export function DraggableTaskCard({
   onClick,
   showTags,
   showAssignee,
-  showBadges,
-  showDueDate
-}: DraggableTaskCardProps) {
+  showDueDate,
+  showPriority,
+  cardProperties
+}: DraggableTaskCardProps & { showPriority?: boolean }) {
   const {
       attributes,
       listeners,
@@ -47,7 +49,7 @@ export function DraggableTaskCard({
   if (isDragging) {
      return (
         <div ref={setNodeRef} style={style} className="opacity-30">
-          <TaskCard task={task} customFields={customFields} showTags={showTags} showAssignee={showAssignee} showBadges={showBadges} showDueDate={showDueDate} />
+          <TaskCard task={task} customFields={customFields} showTags={showTags} showAssignee={showAssignee} showDueDate={showDueDate} showPriority={showPriority} cardProperties={cardProperties} />
         </div>
      );
   }
@@ -61,8 +63,9 @@ export function DraggableTaskCard({
            customFields={customFields}
            showTags={showTags}
            showAssignee={showAssignee}
-           showBadges={showBadges}
            showDueDate={showDueDate}
+           showPriority={showPriority}
+           cardProperties={cardProperties}
            dragHandleProps={{...listeners, ...attributes}}
            onEdit={onClick}
         />

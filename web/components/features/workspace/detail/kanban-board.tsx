@@ -1,29 +1,32 @@
-
 "use client";
 
 import { useWorkspaceStore, Task, TaskStatus, CustomFieldConfig, ViewColumn } from "../store/mock-data";
 import { DndContext, DragOverlay, useDraggable, useDroppable, closestCorners, DragStartEvent, DragEndEvent, useSensors, useSensor, PointerSensor, KeyboardSensor, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { KanbanColumn, GroupBy } from "../views/kanban/column";
+import { KanbanColumn } from "../views/kanban/column";
+import { GroupBy } from "../views/kanban/column";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+
 import { TaskCard } from "../modules/task/card";
 import { TaskDetailModal } from "../modules/task/detail-modal";
 import { DraggablePropertySettings } from "../modules/view-settings/property-settings";
+import { ViewCreationWizard } from "../modules/view-settings/view-creation-wizard";
+import { ViewManagerModal } from "../modules/view-settings/view-manager-modal";
 import { useKanbanDrag } from "../views/kanban/hooks/use-kanban-drag";
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 // AdvancedTaskModal import removed
 import { SmartTagPicker } from "../modules/tag/picker";
-import { Plus, MessageSquare, CheckSquare, MoreHorizontal, Pen, Trash, Users, KanbanSquare, Settings2, Layout, PlusCircle, List, Calendar as CalendarIcon, Tag as TagIcon, GripVertical, AlertTriangle } from "lucide-react";
+import { TagManagerModal } from "../modules/tag/tag-manager-modal";
+import { PriorityManagerModal } from "../modules/priority/priority-manager-modal"; // Import New Modal
+import { Plus, MessageSquare, CheckSquare, MoreHorizontal, Pen, Trash, Users, KanbanSquare, Settings2, Layout, PlusCircle, List, Calendar as CalendarIcon, Tag as TagIcon, GripVertical, AlertTriangle, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
@@ -48,22 +51,30 @@ interface KanbanBoardProps {
 // DraggablePropertySettings moved to ../modules/view-settings/property-settings
 
 export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
-  const { tasks, projects, createTask, updateTaskStatus, updateTask, addColumnToView, renameColumnInView, deleteColumnFromView, updateColumnInView, moveColumnInView, tags, updateViewCardProperties, activeTaskId, setActiveTaskId } = useWorkspaceStore();
+  const { tasks, projects, createTask, updateTaskStatus, updateTask, addColumnToView, renameColumnInView, deleteColumnFromView, updateColumnInView, moveColumnInView, tags, priorities, reorderPriorities, reorderTags, updateViewCardProperties, updateView, deleteView, activeTaskId, setActiveTaskId } = useWorkspaceStore();
   const project = projects.find(p => p.id === projectId);
 
   // View Settings State
   const [showTags, setShowTags] = useState(true);
   const [showAssignee, setShowAssignee] = useState(true);
-  const [showBadges, setShowBadges] = useState(true);
   const [showDueDate, setShowDueDate] = useState(true);
+  const [showPriority, setShowPriority] = useState(true);
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [viewToEdit, setViewToEdit] = useState<any>(null); // Should be BoardView type
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+  const [isPriorityManagerOpen, setIsPriorityManagerOpen] = useState(false);
 
   // useKanbanDrag hook replaces activeId, activeColumn, and handlers
   // useKanbanDrag hook will be called after columns definition
 
+// useKanbanDrag hook replaces activeId, activeColumn, and handlers
+// useKanbanDrag hook will be called after columns definition
+
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
-  const [groupBy, setGroupBy] = useState<GroupBy>('status');
+  const [newColumnCategory, setNewColumnCategory] = useState<'todo' | 'in-progress' | 'done'>('todo');
+
 
   // Initialize activeViewId with the first view's ID
   const [activeViewId, setActiveViewId] = useState<string>(
@@ -75,6 +86,8 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
      if (!project) return null;
      return project.views.find(v => v.id === activeViewId) || project.views[0];
   }, [project, activeViewId]);
+
+  const groupBy = activeView?.groupBy || 'status';
 
   // Helper Functions for Tab Visualization
   const getViewColor = (type: string) => {
@@ -98,19 +111,96 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
   // Derive Columns based on GroupBy state
   const columns = useMemo(() => {
     if (!project) return [];
-    if (groupBy === 'status') {
-       // Use columns from the Active View
-       return activeView?.columns || [];
-    } else {
-      const memberColumns = project.members.map(m => ({ id: m.id, title: m.name, avatar: m.avatar }));
-      return [
-        { id: 'unassigned', title: 'Unassigned', avatar: '?' },
-        ...memberColumns
-      ];
-    }
-  }, [project, groupBy, activeView]);
+    if (groupBy === 'assignee') {
+       // 1. Generate columns for each member
+       const memberColumns = project.members.map(m => ({
+           id: m.id,
+           title: m.name,
+           statusId: m.name,
+           icon: m.avatar || 'U',
+           color: m.role === 'leader' ? 'violet' : 'blue'
+       }));
 
-  const columnIds = useMemo(() => columns.map(c => c.id), [columns]);
+       // 2. Add 'Unassigned' column
+       const unassignedColumn = {
+           id: 'unassigned',
+           title: 'Unassigned',
+           statusId: 'unassigned',
+           icon: '❓',
+           color: 'slate'
+       };
+       return [unassignedColumn, ...memberColumns];
+    } else if (groupBy === 'priority') {
+        const priorityColumns = priorities
+          .sort((a, b) => a.order - b.order)
+          .map(p => ({
+            id: p.id,
+            title: p.name, // Use priority name as title
+            statusId: p.id, // We use priority ID as the key for filtering
+            color: p.color.split(' ')[0].replace('bg-', '').replace('-100', ''), // Extract basic color name for column header
+            category: 'todo' as const // Dummy category for now
+        }));
+
+        // Add 'No Priority' column
+        const noPriorityColumn = {
+            id: 'no-priority',
+            title: 'No Priority',
+            statusId: 'no-priority',
+            color: 'slate',
+            category: 'todo' as const
+        };
+
+        return [noPriorityColumn, ...priorityColumns];
+    } else if (groupBy === 'tag') {
+        const tagColumns = tags.map(t => ({
+            id: t.id,
+            title: t.name,
+            statusId: t.id,
+            color: t.color.replace('bg-', '').replace('-100', '').replace('-500', ''),
+            category: 'todo' as const
+        }));
+
+        const noTagColumn = {
+            id: 'no-tag',
+            title: 'No Tag',
+            statusId: 'no-tag',
+            color: 'slate',
+            category: 'todo' as const
+        };
+
+        return [noTagColumn, ...tagColumns];
+    } else {
+       // For status -> Use columns from the Active View (pre-populated by addView)
+       return activeView?.columns || [];
+    }
+  }, [project, groupBy, activeView, priorities, tags]);
+
+  // Apply Filter and Sort based on view settings
+  const filteredAndSortedColumns = useMemo(() => {
+     let result = [...columns];
+
+     // Filter Empty Columns
+     if (activeView?.showEmptyGroups === false) {
+        result = result.filter(c => !['no-priority', 'no-tag', 'unassigned'].includes(c.id));
+     }
+
+     // Sort Columns
+     if (activeView?.columnOrder && activeView.columnOrder.length > 0) {
+         const orderMap = new Map(activeView.columnOrder.map((id, index) => [id, index]));
+         result.sort((a, b) => {
+             const indexA = orderMap.has(a.id) ? orderMap.get(a.id)! : 999;
+             const indexB = orderMap.has(b.id) ? orderMap.get(b.id)! : 999;
+             return indexA - indexB;
+         });
+     }
+
+     return result;
+  }, [columns, activeView?.showEmptyGroups, activeView?.columnOrder]);
+
+  const displayColumns = filteredAndSortedColumns;
+
+  // Update columnIds to use displayColumns
+  const columnIds = useMemo(() => displayColumns.map(c => c.id), [displayColumns]);
 
   // Filter Tasks
   const projectTasks = tasks.filter(t => {
@@ -134,14 +224,20 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
      handleDragEnd,
      handleDragOver
   } = useKanbanDrag({
-     columns,
+     columns: displayColumns,
      groupBy,
      activeViewId: activeView?.id || '',
+     projectId,
      updateTaskStatus,
      updateTask,
      moveColumnInView,
      reorderTask: useWorkspaceStore(state => state.reorderTask), // Select it directly if possible or destructure above
-     tasks
+     priorities,
+     tags,
+     reorderPriorities,
+     reorderTags,
+     tasks,
+     updateView
   });
 
   const handleAddColumn = () => {
@@ -151,12 +247,18 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
     }
     // Default: Status ID = Title converted to slug.
     // In a real app, we might check for status existence or create a new Status entity separately.
-    addColumnToView(activeView.id, newColumnTitle);
+    addColumnToView(projectId, activeView.id, newColumnTitle, newColumnCategory);
     setNewColumnTitle("");
     setIsAddingColumn(false);
+    // Reset category to todo for next time
+    setNewColumnCategory('todo');
   };
 
   if (!project) return <div>Project not found</div>;
+
+
+
+
 
   return (
     <div className="h-full flex gap-4 overflow-hidden pr-2">
@@ -167,7 +269,8 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
              <div className="flex items-center gap-4">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   {/* Show View Name based on grouping */}
-                  {groupBy === 'status' ? '진행 상태 칸반보드' : '담당자별 칸반보드'}
+                  {activeView?.name || (groupBy === 'status' ? '진행 상태 칸반보드' : groupBy === 'priority' ? '우선순위별 칸반보드' : groupBy === 'tag' ? '태그별 칸반보드' : '담당자별 칸반보드')}
+                  {(groupBy === 'assignee' || groupBy === 'priority' || groupBy === 'tag') && <span className="text-xs font-normal text-muted-foreground ml-2">(Auto-generated)</span>}
                   <Badge variant="secondary" className="font-normal text-muted-foreground ml-2">{projectTasks.length}개</Badge>
                 </h2>
                 {projectTasks.length >= 450 && (
@@ -179,34 +282,88 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
              </div>
 
              <div className="flex items-center gap-2">
-                {groupBy === 'status' && (
-                   <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                         <Button variant="outline" size="sm" className="h-9 border-dashed">
-                            <Plus className="h-3.5 w-3.5 mr-1.5" />
-                            새 섹션
-                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-60 p-0">
-                         <div className="p-3 border-b">
-                            <h4 className="font-medium text-sm mb-2">섹션 생성</h4>
-                            <div className="flex gap-2">
-                               <Input
-                                  value={newColumnTitle}
-                                  onChange={(e) => setNewColumnTitle(e.target.value)}
-                                  placeholder="e.g. Backlog"
-                                  className="h-8"
-                                  onKeyDown={(e) => {
-                                     if(e.nativeEvent.isComposing) return;
-                                     if(e.key === 'Enter') handleAddColumn();
-                                  }}
-                               />
-                               <Button size="sm" onClick={handleAddColumn} disabled={!newColumnTitle.trim()} className="h-8">추가</Button>
-                            </div>
-                         </div>
-                      </DropdownMenuContent>
-                   </DropdownMenu>
-                )}
+                 {groupBy === 'status' && (
+                    <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-9 border-dashed">
+                             <Plus className="h-3.5 w-3.5 mr-1.5" />
+                             섹션 관리
+                          </Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end" className="w-[320px] p-0">
+                          <div className="p-4 space-y-5">
+                             <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-sm">섹션 관리</h4>
+                             </div>
+
+                             {/* Category Groups */}
+                             {['todo', 'in-progress', 'done'].map((cat) => {
+                                 const catColumns = activeView?.columns.filter((c: any) => (c.category || c.statusId || 'todo') === cat) || [];
+                                 const isAddingToThis = newColumnCategory === cat && isAddingColumn;
+
+                                 return (
+                                     <div key={cat} className="space-y-1">
+                                         {/* Category Header */}
+                                         <div className="flex items-center justify-between group">
+                                             <span className="text-xs font-medium text-muted-foreground pl-1">
+                                                {cat === 'todo' ? '할 일' : cat === 'in-progress' ? '진행 중' : '완료'}
+                                             </span>
+                                             <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 shadow-sm hover:bg-primary hover:text-white transition-colors"
+                                                onClick={() => {
+                                                    setNewColumnCategory(cat as any);
+                                                    setIsAddingColumn(true);
+                                                }}
+                                             >
+                                                 <Plus className="h-3.5 w-3.5" />
+                                             </Button>
+                                         </div>
+
+                                         {/* Columns List */}
+                                         <div className="space-y-0.5">
+                                             {catColumns.map((col: any) => (
+                                                 <div key={col.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 text-sm group/item">
+                                                     <div className="text-muted-foreground/50">
+                                                        <GripVertical className="h-3.5 w-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity cursor-grab" />
+                                                     </div>
+                                                     <div className={cn(
+                                                        "w-2 h-2 rounded-full shrink-0",
+                                                        cat === 'todo' ? "bg-slate-500" : cat === 'in-progress' ? "bg-blue-500" : "bg-green-500"
+                                                     )} />
+                                                     <span className="flex-1 truncate">{col.title}</span>
+                                                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                                 </div>
+                                             ))}
+                                         </div>
+
+                                         {/* Inline Add Input */}
+                                         {isAddingToThis && (
+                                            <div className="flex items-center gap-2 px-1 py-1">
+                                                <Input
+                                                    autoFocus
+                                                    value={newColumnTitle}
+                                                    onChange={(e) => setNewColumnTitle(e.target.value)}
+                                                    placeholder="섹션 이름..."
+                                                    className="h-7 text-sm"
+                                                    onKeyDown={(e) => {
+                                                        if(e.nativeEvent.isComposing) return;
+                                                        if(e.key === 'Enter') handleAddColumn();
+                                                        if(e.key === 'Escape') setIsAddingColumn(false);
+                                                    }}
+                                                />
+                                            </div>
+                                         )}
+                                     </div>
+                                 );
+                             })}
+                          </div>
+
+                          {/* Footer Info? Or keep clean. */}
+                       </DropdownMenuContent>
+                    </DropdownMenu>
+                 )}
 
                 {/* View Options Menu (Notion-style) */}
                 <Popover>
@@ -224,20 +381,23 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                              </div>
 
                              <DraggablePropertySettings
-                                properties={activeView?.cardProperties || ['badges', 'tags', 'title', 'assignee', 'dueDate']}
+                                properties={activeView?.cardProperties || ['priority', 'tags', 'title', 'assignee', 'dueDate']}
                                 visibility={{
                                    'tags': showTags,
                                    'assignee': showAssignee,
-                                   'badges': showBadges,
                                    'dueDate': showDueDate,
-                                   'title': true
+                                   'priority': showPriority
                                 }}
-                                onReorder={(newOrder) => activeView && updateViewCardProperties(activeView.id, newOrder)}
                                 onToggle={(prop) => {
                                    if(prop === 'tags') setShowTags(!showTags);
                                    if(prop === 'assignee') setShowAssignee(!showAssignee);
-                                   if(prop === 'badges') setShowBadges(!showBadges);
                                    if(prop === 'dueDate') setShowDueDate(!showDueDate);
+                                   if(prop === 'priority') setShowPriority(!showPriority);
+                                }}
+                                onReorder={(newOrder) => {
+                                   if (activeView) {
+                                       updateViewCardProperties(activeView.id, newOrder);
+                                   }
                                 }}
                              />
                           </div>
@@ -245,44 +405,22 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                          <Separator />
 
                          {/* Filter Section */}
-                         <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground px-1 uppercase tracking-wider">
-                               <Filter className="h-3 w-3" /> 태그 필터
-                            </div>
-                            <div className="max-h-[140px] overflow-y-auto space-y-1 px-1">
-                               {tags.map(tag => {
-                                  const isActive = filterTagIds.includes(tag.id);
-                                  return (
-                                     <div
-                                        key={tag.id}
-                                        onClick={() => {
-                                           setFilterTagIds(prev =>
-                                              isActive ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
-                                           );
-                                        }}
-                                        className={cn(
-                                           "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors",
-                                           isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-muted-foreground"
-                                        )}
-                                     >
-                                        <div className={cn("w-2 h-2 rounded-full", tag.color)} />
-                                        <span>{tag.name}</span>
-                                        {isActive && <CheckSquare className="h-3 w-3 ml-auto opacity-50" />}
-                                     </div>
-                                  );
-                               })}
-                                {tags.length === 0 && <div className="text-xs text-muted-foreground p-1">생성된 태그가 없습니다.</div>}
-                             </div>
-
-                             <div className="pt-2 border-t mt-2">
-                                <SmartTagPicker
-                                   trigger={
-                                      <Button variant="ghost" size="sm" className="w-full justify-start text-xs h-7 px-2 text-muted-foreground hover:text-foreground">
-                                         <Settings2 className="h-3 w-3 mr-2" /> 태그 관리
-                                      </Button>
-                                   }
-                                />
-                             </div>
+                         {/* Removed Tag Filter Section */}
+                         <div className="px-1 space-y-1">
+                             <Button size="sm" variant="ghost" className="w-full justify-start h-8 px-2 text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                   setIsTagManagerOpen(true);
+                                }}
+                             >
+                                <TagIcon className="h-3 w-3 mr-2" /> 태그 관리
+                             </Button>
+                             <Button size="sm" variant="ghost" className="w-full justify-start h-8 px-2 text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                   setIsPriorityManagerOpen(true);
+                                }}
+                             >
+                                <SlidersHorizontal className="h-3 w-3 mr-2" /> 우선순위 관리
+                             </Button>
                          </div>
                       </div>
                    </PopoverContent>
@@ -292,8 +430,8 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
 
           <DndContext onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} collisionDetection={closestCorners} sensors={sensors}>
             <div className="flex gap-4 h-full overflow-x-auto pb-4 items-start px-6 pt-6">
-               <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
-                 {columns.map(col => {
+               <SortableContext items={displayColumns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                 {(displayColumns as any[]).map(col => {
                    const colTasks = projectTasks.filter(t => {
                      if (groupBy === 'status') {
                         if ('statusId' in col) {
@@ -301,8 +439,27 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                         }
                         return t.status === col.id;
                      }
-                     if (col.id === 'unassigned') return !t.assignee || t.assignee === 'unassigned';
-                     return t.assignee === col.title;
+                     // For assignee view, filter tasks by assignee name matching column.title
+                     // For 'unassigned', we check if !task.assignee
+                     if (groupBy === 'assignee') {
+                        if (col.id === 'unassigned') return !t.assignee;
+                        return t.assignee === col.title;
+                     }
+
+                     if (groupBy === 'priority') {
+                        if (col.id === 'no-priority') return !t.priorityId;
+                        // Match task.priorityId with the column's statusId (which stores the priority ID)
+                        return t.priorityId === ('statusId' in col ? col.statusId : col.id);
+                     }
+
+                     if (groupBy === 'tag') {
+                        if (col.id === 'no-tag') return !t.tags || t.tags.length === 0;
+                        // For simplicity in Kanban, we grouping by the FIRST tag.
+                        // Real-world tag kanban is complex due to 1:N relationship.
+                        return t.tags && t.tags[0] === ('statusId' in col ? col.statusId : col.id);
+                     }
+
+                     return false; // Fallback
                    });
 
                    return (
@@ -321,19 +478,26 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                            const defaultProps: any = { projectId, title: 'New Task', customFieldValues: [] };
                            if (groupBy === 'status') {
                               defaultProps.status = ('statusId' in col) ? col.statusId : col.id;
-                           } else {
-                             defaultProps.status = 'todo';
+                           } else if (groupBy === 'assignee') {
+                             defaultProps.status = 'todo'; // Default status for assignee view
                              if (col.id !== 'unassigned') defaultProps.assignee = col.title;
+                           } else if (groupBy === 'priority') {
+                             defaultProps.status = 'todo'; // Default status for priority view
+                             if (col.id !== 'no-priority') defaultProps.priorityId = ('statusId' in col ? col.statusId : col.id);
+                           } else if (groupBy === 'tag') {
+                             defaultProps.status = 'todo';
+                             if (col.id !== 'no-tag') defaultProps.tags = [('statusId' in col ? col.statusId : col.id)];
                            }
                            const newTaskId = createTask(defaultProps);
                            if (newTaskId) {
                                setActiveTaskId(newTaskId);
                            }
                        }}
-                       onRename={(newTitle) => activeView ? renameColumnInView(activeView.id, col.id, newTitle) : null}
-                       onUpdate={(updates) => activeView ? updateColumnInView(activeView.id, col.id, updates) : null}
+                       onRename={(newTitle: string) => activeView ? renameColumnInView(activeView.id, col.id, newTitle) : null}
+                       onUpdate={(updates: any) => activeView ? updateColumnInView(activeView.id, col.id, updates) : null}
                        onDelete={() => activeView ? deleteColumnFromView(activeView.id, col.id) : null}
-                       viewSettings={{ showTags, showAssignee, showBadges, showDueDate }}
+                       viewSettings={{ showTags, showAssignee, showDueDate, showPriority, cardProperties: activeView?.cardProperties }}
+                       category={('category' in col) ? (col as any).category : undefined}
                      />
                    );
                  })}
@@ -350,33 +514,50 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
                      isOverlay
                      showTags={showTags}
                      showAssignee={showAssignee}
-                     showBadges={showBadges}
-                     showDueDate={showDueDate}
+
+                      showDueDate={showDueDate}
+                      showPriority={showPriority}
                    />
                ) : activeColumn ? (
                   <KanbanColumn
-                     id={activeColumn.id}
-                     column={activeColumn}
-                     title={activeColumn.title}
-                     color={('color' in activeColumn) ? activeColumn.color : undefined}
+                     id={(activeColumn as any).id}
+                     column={activeColumn as any}
+                     title={(activeColumn as any).title}
+                     color={'color' in activeColumn ? (activeColumn as any).color : undefined}
                      tasks={projectTasks.filter(t => {
+                       const col = activeColumn as any;
                        if (groupBy === 'status') {
-                          if ('statusId' in activeColumn) return t.status === activeColumn.statusId;
-                          return t.status === activeColumn.id;
+                          if ('statusId' in col) return t.status === col.statusId;
+                          return t.status === col.id;
                        }
-                       if (activeColumn.id === 'unassigned') return !t.assignee || t.assignee === 'unassigned';
-                       return t.assignee === activeColumn.title;
-                     })}
+                        if (groupBy === 'assignee') {
+                           if (col.id === 'unassigned') return !t.assignee || t.assignee === 'unassigned';
+                           return t.assignee === col.title;
+                        }
+
+                         if (groupBy === 'priority') {
+                             if (col.id === 'no-priority') return !t.priorityId;
+                             return t.priorityId === ('statusId' in col ? col.statusId : col.id);
+                         }
+
+                         if (groupBy === 'tag') {
+                            if (col.id === 'no-tag') return !t.tags || t.tags.length === 0;
+                            return t.tags && t.tags[0] === ('statusId' in col ? col.statusId : col.id);
+                         }
+
+                        return false;
+                      })}
                      customFields={project.customFields || []}
                      groupBy={groupBy}
-                     icon={('avatar' in activeColumn) ? activeColumn.avatar as string : undefined}
+                     icon={'avatar' in activeColumn ? (activeColumn as any).avatar as string : undefined}
                      // Pass dummy handlers for overlay
                      onTaskClick={() => {}}
                      onCreateTask={() => {}}
                      onRename={() => {}}
                      onUpdate={() => {}}
                      onDelete={() => {}}
-                     viewSettings={{ showTags, showAssignee, showBadges, showDueDate }}
+                     category={'category' in activeColumn ? (activeColumn as any).category : undefined}
+                     viewSettings={{ showTags, showAssignee, showDueDate, showPriority, cardProperties: activeView?.cardProperties }}
                      isOverlay
                      className="rotate-2 scale-105 shadow-2xl opacity-90 ring-1 ring-primary/20"
                   />
@@ -385,38 +566,97 @@ export function KanbanBoard({ projectId, onNavigateToDoc }: KanbanBoardProps) {
           </DndContext>
        </div>
 
-       {/* Right-Side Notebook Tabs */}
-       <div className="w-14 flex flex-col gap-4 pt-10">
-           <NotebookTab
-              label="담당자 별"
-              active={groupBy === 'assignee'}
-              onClick={() => setGroupBy('assignee')}
-              color="bg-blue-500"
-              icon={<Users className="h-5 w-5 text-white" />}
-           />
-           <NotebookTab
-              label="진행 상태"
-              active={groupBy === 'status'}
-              onClick={() => setGroupBy('status')}
-              color="bg-green-500"
-              icon={<KanbanSquare className="h-5 w-5 text-white" />}
-           />
+        {/* Right-Side Notebook Tabs */}
+        <div className="w-14 flex flex-col gap-4 pt-10">
+           {project?.views.map((view) => (
+               <div key={view.id} className="relative group">
+                   <NotebookTab
+                      label={view.name}
+                      active={activeViewId === view.id}
+                      onClick={() => setActiveViewId(view.id)}
+                      color={view.color ? `bg-${view.color}-500` : (view.groupBy === 'status' ? 'bg-green-500' : 'bg-blue-500')}
+                      icon={
+                          view.icon ? <span className="text-xl leading-none">{view.icon}</span> :
+                          view.groupBy === 'status' ? <KanbanSquare className="h-5 w-5 text-white" /> :
+                          view.groupBy === 'assignee' ? <Users className="h-5 w-5 text-white" /> :
+                          view.groupBy === 'tag' ? <TagIcon className="h-5 w-5 text-white" /> :
+                          <Layout className="h-5 w-5 text-white" />
+                       }
+                   />
+                   {/* Settings Menu Removed from here */ }
+                </div>
+            ))}
 
-          <NotebookTab
-             label="뷰 추가"
-             active={false}
-             onClick={() => {
-                // Placeholder for Add View logic. In real app, opens a dialog.
-                const newViewId = `view-${Date.now()}`;
-                // We would need an addView action in store. For now just log.
-                console.log("Add View Clicked");
-             }}
-             color="bg-muted-foreground/20"
-             icon={<PlusCircle className="h-5 w-5 text-muted-foreground" />}
-          />
-       </div>
+           {/* Add View Button (Max 6 limit) */}
 
-       {/* AdvancedTaskModal removed (dead code) */}
+
+           {/* View Settings Button (Moved here) */}
+           {activeView && (
+               <DropdownMenu>
+                   <DropdownMenuTrigger asChild>
+                       <div> {/* Wrapper to avoid forwardRef issues with custom component */}
+                           <NotebookTab
+                               label="뷰 관리"
+                               active={false}
+                               onClick={() => {}} // Triggered by Dropdown
+                               color="bg-muted-foreground/10"
+                               icon={<Settings2 className="h-5 w-5 text-muted-foreground" />}
+                           />
+                       </div>
+                   </DropdownMenuTrigger>
+                   <DropdownMenuContent align="start" side="right" className="w-48 ml-2">
+                       <DropdownMenuLabel>
+                           현재 뷰: <span className="text-primary">{activeView.name}</span>
+                       </DropdownMenuLabel>
+                       <DropdownMenuSeparator />
+                       <DropdownMenuItem onClick={() => setViewToEdit(activeView)}>
+                           <Pen className="mr-2 h-4 w-4" />
+                           이름 및 색상 수정
+                       </DropdownMenuItem>
+                       {!activeView.isSystem && (
+                           <DropdownMenuItem
+                               className="text-red-600 focus:text-red-600"
+                               onClick={() => {
+                                   if (confirm("정말 이 뷰를 삭제하시겠습니까?")) {
+                                        deleteView(projectId, activeView.id);
+                                        const firstView = project.views.find(v => v.id !== activeView.id);
+                                        if (firstView) setActiveViewId(firstView.id);
+                                   }
+                               }}
+                           >
+                               <Trash className="mr-2 h-4 w-4" />
+                               뷰 삭제하기
+                           </DropdownMenuItem>
+                       )}
+                   </DropdownMenuContent>
+               </DropdownMenu>
+           )}
+        </div>
+
+        <ViewCreationWizard
+            projectId={projectId}
+            isOpen={isWizardOpen}
+            onClose={() => setIsWizardOpen(false)}
+            onCreated={(viewId) => {
+                setActiveViewId(viewId);
+            }}
+        />
+
+        <ViewManagerModal
+            projectId={projectId}
+            isOpen={!!viewToEdit}
+            onClose={() => setViewToEdit(null)}
+            view={viewToEdit}
+        />
+
+        <TagManagerModal
+            isOpen={isTagManagerOpen}
+            onClose={() => setIsTagManagerOpen(false)}
+        />
+        <PriorityManagerModal
+            isOpen={isPriorityManagerOpen}
+            onClose={() => setIsPriorityManagerOpen(false)}
+        />
     </div>
   );
 }

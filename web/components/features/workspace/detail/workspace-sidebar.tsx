@@ -41,6 +41,27 @@ export function WorkspaceSidebar({ projectId, activeTab, onTabChange }: Workspac
         </div>
       </div>
 
+      {/* Personal Zone (Moved Up) */}
+      <div className="py-2 px-2 space-y-0.5 border-b mb-2 pb-2">
+          <Button
+             variant={activeTab === 'inbox' ? "secondary" : "ghost"}
+             className={cn("w-full justify-start h-8 px-2 text-muted-foreground font-normal", activeTab === 'inbox' && "bg-secondary text-foreground")}
+             onClick={() => onTabChange('inbox')}
+          >
+             <Bell className="mr-2 h-4 w-4" />
+             Inbox
+             <span className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5">2</span>
+          </Button>
+          <Button
+             variant={activeTab === 'briefcase' ? "secondary" : "ghost"}
+             className={cn("w-full justify-start h-8 px-2 text-muted-foreground font-normal", activeTab === 'briefcase' && "bg-secondary text-foreground")}
+             onClick={() => onTabChange('briefcase')}
+          >
+             <Briefcase className="mr-2 h-4 w-4" />
+             Briefcase
+          </Button>
+      </div>
+
       <div className="py-2 px-2 space-y-1">
         {navItems.map((item) => (
           <Button
@@ -60,29 +81,7 @@ export function WorkspaceSidebar({ projectId, activeTab, onTabChange }: Workspac
       </div>
 
       <div className="flex-1 pt-0 px-2 space-y-4 overflow-y-auto">
-        {/* Personal Zone */}
-        <div>
-           <div className="px-2 mb-1 text-xs font-semibold text-muted-foreground uppercase">Personal</div>
-           <div className="space-y-0.5">
-              <Button
-                 variant={activeTab === 'inbox' ? "secondary" : "ghost"}
-                 className={cn("w-full justify-start h-8 px-2 text-muted-foreground font-normal", activeTab === 'inbox' && "bg-secondary text-foreground")}
-                 onClick={() => onTabChange('inbox')}
-              >
-                 <Bell className="mr-2 h-4 w-4" />
-                 Inbox
-                 <span className="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5">2</span>
-              </Button>
-              <Button
-                 variant={activeTab === 'briefcase' ? "secondary" : "ghost"}
-                 className={cn("w-full justify-start h-8 px-2 text-muted-foreground font-normal", activeTab === 'briefcase' && "bg-secondary text-foreground")}
-                 onClick={() => onTabChange('briefcase')}
-              >
-                 <Briefcase className="mr-2 h-4 w-4" />
-                 Briefcase
-              </Button>
-           </div>
-        </div>
+
 
         {/* Channels */}
         <div>

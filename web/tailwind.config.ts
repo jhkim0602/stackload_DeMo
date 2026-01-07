@@ -10,7 +10,7 @@ const config: Config = {
   ],
   safelist: [
     {
-      pattern: /(bg|text|border)-(gray|red|orange|amber|green|emerald|teal|cyan|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|400|500|900)/,
+      pattern: /(bg|text|border)-(gray|red|orange|amber|green|emerald|teal|cyan|blue|indigo|violet|purple|fuchsia|pink|slate|stone|zinc|neutral|rose)-(50|100|200|300|400|500|600|700|800|900|950)/,
       variants: ['dark', 'hover'],
     },
   ],

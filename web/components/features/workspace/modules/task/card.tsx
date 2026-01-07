@@ -21,9 +21,9 @@ interface TaskCardProps {
   customFields: CustomFieldConfig[];
   isOverlay?: boolean;
   showTags?: boolean;
-  showAssignee?: boolean;
-  showBadges?: boolean;
+  showAssignee?: boolean; // Added missing prop
   showDueDate?: boolean;
+  showPriority?: boolean;
   cardProperties?: string[];
   dragHandleProps?: any;
   onEdit?: () => void;
@@ -35,32 +35,31 @@ export function TaskCard({
   isOverlay,
   showTags = true,
   showAssignee = true,
-  showBadges = true,
   showDueDate = true,
+  showPriority = true,
   cardProperties,
   dragHandleProps,
   onEdit
 }: TaskCardProps) {
-  const { tags, deleteTask } = useWorkspaceStore();
+  const { tags, priorities, deleteTask } = useWorkspaceStore(); // Access priorities from store
 
   // Default order if not provided
-  const propertyOrder = cardProperties || ['badges', 'tags', 'title', 'assignee', 'dueDate'];
+  const propertyOrder = cardProperties || ['priority', 'tags', 'title', 'assignee', 'dueDate'];
 
   const renderProperty = (prop: string, index: number) => {
      const key = `${prop}-${index}`;
      switch(prop) {
-        case 'badges':
-           if (!showBadges) return null;
+        case 'priority':
+           if (!showPriority || !task.priorityId) return null;
+           const priority = priorities.find(p => p.id === task.priorityId);
+           if (!priority) return null;
+
            return (
-              <div key={key} className="flex flex-wrap gap-1.5 mb-1.5 min-h-[0px]">
-                 {task.customFieldValues?.map((val, idx) => {
-                    const field = customFields.find(f => f.id === val.fieldId);
-                    if (!field || field.type !== 'select') return null;
-                    const color = val.value === 'High' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-700 border-slate-100';
-                    return <Badge key={idx} variant="outline" className={`text-[10px] px-1.5 py-0 h-5 font-normal ${color}`}>{val.value}</Badge>;
-                 })}
-              </div>
+              <Badge key={key} variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-medium border mb-1.5 w-fit", priority.color)}>
+                  {priority.name}
+              </Badge>
            );
+
         case 'tags':
            if (!showTags) return null;
            if (!task.tags || task.tags.length === 0) return null;
@@ -69,8 +68,13 @@ export function TaskCard({
                  {task.tags.map(tagId => {
                     const tag = tags.find(t => t.id === tagId);
                     if (!tag) return null;
-                    const softColorClass = tag.color.replace('500', '100').replace('bg-', 'bg-');
-                    const textClass = tag.color.replace('bg-', 'text-').replace('500', '700');
+                    const isLegacy = tag.color.includes('bg-');
+                    const softColorClass = isLegacy
+                        ? tag.color.replace('500', '100')
+                        : `bg-${tag.color}-100`;
+                    const textClass = isLegacy
+                        ? tag.color.replace('bg-', 'text-').replace('500', '700')
+                        : `text-${tag.color}-700`;
                     return (
                        <Badge
                           key={tag.id}
@@ -128,15 +132,20 @@ export function TaskCard({
 
   // Fallback for Notion colors usually like 'bg-orange-100 text-orange-700' -> we want 'bg-orange-500'
   // Or if it is 'bg-red-500', it stays 'bg-red-500'.
-  // Simple heuristic:
-  const getSolidColor = (colorClass: string) => {
-      if (!colorClass) return 'bg-primary/20';
-      // Extract color name (e.g. 'red', 'blue')
-      const match = colorClass.match(/(?:bg|text)-([a-z]+)-/);
-      if (match && match[1]) {
-          return `bg-${match[1]}-500`;
+  // Helper: Handle both legacy 'bg-red-500' and new 'red' formats
+  const getSolidColor = (color: string) => {
+      if (!color) return 'bg-primary/20';
+
+      // If it's a legacy Tailwind class
+      if (color.includes('bg-') || color.includes('text-')) {
+          const match = color.match(/(?:bg|text)-([a-z]+)-/);
+          if (match && match[1]) {
+              return `bg-${match[1]}-500`;
+          }
       }
-      return colorClass; // default fallback
+
+      // If it's a base color name (new system)
+      return `bg-${color}-500`;
   };
 
   const currentAccent = firstTag ? getSolidColor(firstTag.color) : 'bg-primary/20 hover:bg-primary/40';

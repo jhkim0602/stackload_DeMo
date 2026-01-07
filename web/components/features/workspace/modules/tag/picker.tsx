@@ -19,30 +19,25 @@ interface SmartTagPickerProps {
 }
 
 const TAG_COLORS = [
-  "bg-neutral-100",     // 기본
-  "bg-gray-200",        // 회색
-  "bg-amber-200/60",    // 갈색
-  "bg-orange-200/60",   // 주황색
-  "bg-yellow-200/60",   // 노란색
-  "bg-green-200/60",    // 초록색
-  "bg-blue-200/60",     // 파란색
-  "bg-purple-200/60",   // 보라색
-  "bg-pink-200/60",     // 분홍색
-  "bg-red-200/60",      // 빨간색
+  "slate", "gray", "zinc", "neutral", "stone",
+  "red", "orange", "amber", "yellow", "lime",
+  "green", "emerald", "teal", "cyan", "sky",
+  "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"
 ];
 
-function getTextColor(bgColor: string) {
-  if (bgColor.includes("neutral")) return "text-neutral-700";
-  if (bgColor.includes("gray")) return "text-gray-700";
-  if (bgColor.includes("amber")) return "text-amber-900";
-  if (bgColor.includes("orange")) return "text-orange-900";
-  if (bgColor.includes("yellow")) return "text-yellow-900";
-  if (bgColor.includes("green")) return "text-green-900";
-  if (bgColor.includes("blue")) return "text-blue-900";
-  if (bgColor.includes("purple")) return "text-purple-900";
-  if (bgColor.includes("pink")) return "text-pink-900";
-  if (bgColor.includes("red")) return "text-red-900";
-  return "text-foreground";
+function getTextColor(color: string) {
+    if (!color) return "text-foreground";
+    // If legacy class
+    if (color.includes("text-")) return color;
+
+    // Base color mapping
+    return `text-${color}-700`;
+}
+
+function getBgColor(color: string) {
+    if (!color) return "bg-muted";
+    if (color.includes("bg-")) return color; // Legacy support
+    return `bg-${color}-100`;
 }
 
 type ViewState = 'list' | 'create' | 'edit';
@@ -54,7 +49,7 @@ export function SmartTagPicker({ selectedTagIds = [], onToggleTag, trigger }: Sm
 
   // Create / Edit State
   const [tagNameInput, setTagNameInput] = useState("");
-  const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
+  const [selectedColor, setSelectedColor] = useState("blue"); // Default to base name
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -67,6 +62,8 @@ export function SmartTagPicker({ selectedTagIds = [], onToggleTag, trigger }: Sm
     setTagNameInput("");
     setSelectedColor(TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)]);
   };
+
+  // ... (handlers remain mostly same, mostly logic using selectedColor is fine as it's just string)
 
   const handlDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -100,19 +97,24 @@ export function SmartTagPicker({ selectedTagIds = [], onToggleTag, trigger }: Sm
   const startEdit = (tag: Tag) => {
      setEditingTagId(tag.id);
      setTagNameInput(tag.name);
+     // Handle legacy color if present, else use as is
+     const baseColor = tag.color.replace('bg-', '').replace('-200/60', '').replace('-100', '');
+     // A bit simplistic but effective enough for migration or just use tag.color if we support legacy in rendering
+     // Actually, let's just use tag.color. If it's effectively legacy, user might want to pick a new one from the list.
+     // But wait, our mock data is already migrated.
      setSelectedColor(tag.color);
      setView('edit');
   };
 
   const renderColorPicker = () => (
-     <div className="flex flex-wrap gap-1.5 p-1">
+     <div className="flex flex-wrap gap-1.5 p-1 max-w-[240px]">
         {TAG_COLORS.map(color => (
            <button
               key={color}
               onClick={() => setSelectedColor(color)}
               className={cn(
                  "w-5 h-5 rounded-full ring-1 ring-inset ring-black/10 hover:scale-110 transition-transform",
-                 color,
+                 `bg-${color}-500`, // Show solid color in picker
                  selectedColor === color && "ring-2 ring-primary ring-offset-1 scale-110"
               )}
            />
@@ -183,7 +185,7 @@ export function SmartTagPicker({ selectedTagIds = [], onToggleTag, trigger }: Sm
 
                <div className="space-y-3">
                   <div className="flex items-center gap-2 px-2 py-1 border rounded-md">
-                     <Badge className={cn("rounded-sm px-2 font-normal", selectedColor, getTextColor(selectedColor))}>
+                     <Badge className={cn("rounded-sm px-2 font-normal", getBgColor(selectedColor), getTextColor(selectedColor))}>
                         {tagNameInput || "태그명"}
                      </Badge>
                      <Input
@@ -223,7 +225,7 @@ export function SmartTagPicker({ selectedTagIds = [], onToggleTag, trigger }: Sm
 
                <div className="space-y-3">
                   <div className="flex items-center gap-2 px-2 py-1 border rounded-md">
-                     <Badge className={cn("rounded-sm px-2 font-normal max-w-[120px] truncate", selectedColor, getTextColor(selectedColor))}>
+                     <Badge className={cn("rounded-sm px-2 font-normal max-w-[120px] truncate", getBgColor(selectedColor), getTextColor(selectedColor))}>
                         {tagNameInput || "태그명"}
                      </Badge>
                      <Input
@@ -260,6 +262,7 @@ function SortableTagItem({ tag, isSelected, onToggle, onEdit }: { tag: Tag, isSe
    };
 
    const textClass = getTextColor(tag.color);
+   const bgClass = getBgColor(tag.color);
 
    return (
       <div
@@ -275,7 +278,7 @@ function SortableTagItem({ tag, isSelected, onToggle, onEdit }: { tag: Tag, isSe
             <div onClick={onToggle} className="flex-1 cursor-pointer flex items-center min-w-0">
                <Badge
                   variant="secondary"
-                  className={cn("px-1.5 py-0 h-5 text-xs font-normal border-0 pointer-events-none rounded-sm max-w-full truncate", tag.color, textClass)}
+                  className={cn("px-1.5 py-0 h-5 text-xs font-normal border-0 pointer-events-none rounded-sm max-w-full truncate", bgClass, textClass)}
                >
                   {tag.name}
                </Badge>
