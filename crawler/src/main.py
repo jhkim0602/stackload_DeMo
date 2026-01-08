@@ -1,41 +1,50 @@
+import sys
+import argparse
 import asyncio
-import os
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 from dotenv import load_dotenv
 
+# Import crawlers
+from src.apps.tech_blog.crawler import run_tech_blog_crawler
+from src.apps.job_post.crawler import crawl_job_description
+from src.apps.dev_event.service import run_dev_event_crawler
+
 load_dotenv()
 
-scheduler = AsyncIOScheduler()
+def main():
+    parser = argparse.ArgumentParser(description="StackLoad Unified Crawler CLI")
 
-from src.domains.tech_blog.crawler import run_tech_blog_crawler
+    subparsers = parser.add_subparsers(dest="target", help="Target crawler to run")
 
-async def crawl_job():
-    logger.info("Starting scheduled crawl job...")
-    run_tech_blog_crawler()
-    logger.info("Crawl job finished.")
+    # Tech Blog
+    subparsers.add_parser("tech_blog", help="Run Tech Blog Crawler (RSS)")
 
-async def main():
-    logger.info("Starting StackLoad Crawler Service...")
+    # Job Post (JD)
+    jd_parser = subparsers.add_parser("job_post", help="Run Job Description Crawler")
+    jd_parser.add_argument("url", help="URL of the Job Description")
 
-    # Add jobs
-    scheduler.add_job(crawl_job, 'interval', hours=6, id='regular_crawl')
+    # Dev Event
+    subparsers.add_parser("dev_event", help="Run Dev-Event (GitHub) Crawler")
 
-    # Run once immediately on startup for verification
-    logger.info("Triggering initial crawl...")
-    asyncio.create_task(crawl_job())
+    args = parser.parse_args()
 
-    scheduler.start()
+    if args.target == "tech_blog":
+        # Tech Blog crawler was async but wrapped in sync function run_tech_blog_crawler?
+        # Let's check: run_tech_blog_crawler is sync defined in crawler.py (it calls time.sleep)
+        try:
+            run_tech_blog_crawler()
+        except KeyboardInterrupt:
+            pass
 
-    try:
-        # Keep the event loop running
-        while True:
-            await asyncio.sleep(3600)
-    except (KeyboardInterrupt, SystemExit):
-        pass
+    elif args.target == "job_post":
+        result = crawl_job_description(args.url)
+        print(result)
+
+    elif args.target == "dev_event":
+        run_dev_event_crawler()
+
+    else:
+        parser.print_help()
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        pass
+    main()

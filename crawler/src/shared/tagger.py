@@ -3,7 +3,7 @@ import time
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
-from src.core.config import GEMINI_API_KEY, TAG_RETRY_BASE_MS
+from src.shared.config import GEMINI_API_KEY, TAG_RETRY_BASE_MS
 
 ALLOWED_TAGS = [
     # Frontend

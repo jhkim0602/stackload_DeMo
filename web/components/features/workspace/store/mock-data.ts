@@ -433,6 +433,9 @@ export interface WorkspaceStore {
   deleteTask: (taskId: string) => void;
   reorderTask: (taskId: string, newStatus: TaskStatus, newIndex: number) => void;
 
+  addSubTask: (taskId: string, title: string) => void;
+  toggleSubTask: (taskId: string, subtaskId: string) => void;
+
   // New: Active Document Selection
   activeDocId: string | null;
   setActiveDocId: (id: string | null) => void;
@@ -727,6 +730,24 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       return {
           tasks: state.tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
       };
-  })
+  }),
+
+  addSubTask: (taskId, title) => set((state) => ({
+    tasks: state.tasks.map(t => t.id === taskId ? {
+      ...t,
+      subtasks: [...(t.subtasks || []), {
+        id: `st-${Date.now()}`,
+        title,
+        completed: false
+      }]
+    } : t)
+  })),
+
+  toggleSubTask: (taskId, subtaskId) => set((state) => ({
+    tasks: state.tasks.map(t => t.id === taskId ? {
+      ...t,
+      subtasks: t.subtasks?.map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st)
+    } : t)
+  }))
 
 }));
