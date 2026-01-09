@@ -1,6 +1,6 @@
 "use client";
 
-import { useWorkspaceStore } from "../store/mock-data";
+import { useWorkspaceStore } from "../../store/mock-data";
 import { useState, useMemo } from "react";
 import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import { useCreateBlockNote } from "@blocknote/react";

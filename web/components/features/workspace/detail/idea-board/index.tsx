@@ -12,7 +12,7 @@ const IdeaBoardSDK = dynamic(
           <Loader2 className="h-6 w-6 text-indigo-600 animate-spin" />
         </div>
         <div className="text-sm font-medium text-gray-500 animate-pulse">
-          Loading Canvas Engine...
+          아이디어 보드를 열심히 가져오고 있어요!
         </div>
       </div>
     ),

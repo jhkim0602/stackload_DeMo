@@ -1,27 +1,26 @@
 "use client";
 
-import { useWorkspaceStore, Task, TaskStatus, CustomFieldConfig, ViewColumn } from "../store/mock-data";
+import { useWorkspaceStore, Task, TaskStatus, CustomFieldConfig, ViewColumn } from "../../store/mock-data";
 import { DndContext, DragOverlay, useDraggable, useDroppable, closestCorners, DragStartEvent, DragEndEvent, useSensors, useSensor, PointerSensor, KeyboardSensor, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { KanbanColumn } from "../views/kanban/column";
-import { GroupBy } from "../views/kanban/column";
+import { KanbanColumn } from "../../views/kanban/column";
+import { GroupBy } from "../../views/kanban/column";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-
-import { TaskCard } from "../modules/task/card";
-import { TaskDetailModal } from "../modules/task/detail-modal";
-import { DraggablePropertySettings } from "../modules/view-settings/property-settings";
-import { ViewCreationWizard } from "../modules/view-settings/view-creation-wizard";
-import { ViewManagerModal } from "../modules/view-settings/view-manager-modal";
-import { useKanbanDrag } from "../views/kanban/hooks/use-kanban-drag";
+import { TaskCard } from "../../modules/task/card";
+import { TaskDetailModal } from "../../modules/task/detail-modal";
+import { DraggablePropertySettings } from "../../modules/view-settings/property-settings";
+import { ViewCreationWizard } from "../../modules/view-settings/view-creation-wizard";
+import { ViewManagerModal } from "../../modules/view-settings/view-manager-modal";
+import { useKanbanDrag } from "../../views/kanban/hooks/use-kanban-drag";
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 // AdvancedTaskModal import removed
-import { SmartTagPicker } from "../modules/tag/picker";
-import { TagManagerModal } from "../modules/tag/tag-manager-modal";
-import { PriorityManagerModal } from "../modules/priority/priority-manager-modal"; // Import New Modal
+import { SmartTagPicker } from "../../modules/tag/picker";
+import { TagManagerModal } from "../../modules/tag/tag-manager-modal";
+import { PriorityManagerModal } from "../../modules/priority/priority-manager-modal"; // Import New Modal
 import { Plus, MessageSquare, CheckSquare, MoreHorizontal, Pen, Trash, Users, KanbanSquare, Settings2, Layout, PlusCircle, List, Calendar as CalendarIcon, Tag as TagIcon, GripVertical, AlertTriangle, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -25,8 +25,10 @@ export default function IdeaBoardSDK({ projectId }: IdeaBoardSDKProps) {
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
+        // Sanitize: collaborators 데이터를 제거하고 로드 (크래시 방지)
+        const { collaborators, ...restAppState } = parsed.appState || {};
         setElements(parsed.elements || []);
-        setAppState(parsed.appState || null);
+        setAppState(restAppState);
         setLastSaved(new Date());
       } catch (error) {
         console.error("Failed to parse board data", error);
@@ -39,9 +41,11 @@ export default function IdeaBoardSDK({ projectId }: IdeaBoardSDKProps) {
 
   const saveData = useCallback(
     debounce((newElements: any, newAppState: any) => {
+      // Sanitize: collaborators 데이터를 제외하고 저장
+      const { collaborators, ...stateToSave } = newAppState;
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ elements: newElements, appState: newAppState })
+        JSON.stringify({ elements: newElements, appState: stateToSave })
       );
       setLastSaved(new Date());
     }, 1000),
@@ -62,7 +66,7 @@ export default function IdeaBoardSDK({ projectId }: IdeaBoardSDKProps) {
           <Loader2 className="h-6 w-6 text-indigo-600 animate-spin" />
         </div>
         <div className="text-sm font-medium text-gray-500 animate-pulse">
-          Loading Canvas...
+          필기도구 가져오는중....
         </div>
       </div>
     );
@@ -73,7 +77,7 @@ export default function IdeaBoardSDK({ projectId }: IdeaBoardSDKProps) {
       <div className="absolute top-4 left-4 z-10 flex items-center gap-3 pointer-events-none">
         <div className="bg-white/80 dark:bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm flex items-center gap-2 pointer-events-auto">
           <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">Idea Board</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">아이디어 화이트보드</span>
         </div>
         {lastSaved && (
           <div className="bg-white/60 dark:bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-gray-200/50 dark:border-zinc-800/50 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 transition-opacity duration-500">

@@ -1,10 +1,10 @@
 "use client";
 
-import { useWorkspaceStore, Task } from "../store/mock-data";
+import { useWorkspaceStore, Task } from "../../store/mock-data";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { TaskSidePanel } from "./task-side-panel";
+import { TaskSidePanel } from "../task-side-panel";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 

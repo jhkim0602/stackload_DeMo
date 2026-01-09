@@ -1,9 +1,9 @@
 "use client";
 
-import { ProjectHero } from "./overview/project-hero";
-import { TeamWidget } from "./overview/team-widget";
-import { UpcomingEvents } from "./overview/upcoming-events";
-import { DashboardCalendar } from "./overview/dashboard-calendar";
+import { ProjectHero } from "./project-hero";
+import { TeamWidget } from "./team-widget";
+import { UpcomingEvents } from "./upcoming-events";
+import { DashboardCalendar } from "./dashboard-calendar";
 
 interface DashboardOverviewProps {
   projectId: string;

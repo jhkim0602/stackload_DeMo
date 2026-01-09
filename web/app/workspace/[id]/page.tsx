@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { SidebarLayout } from "@/components/layout/sidebar-layout";
 import { WorkspaceSidebar } from "@/components/features/workspace/detail/workspace-sidebar";
-import { DashboardOverview } from "@/components/features/workspace/detail/dashboard-overview";
-import { KanbanBoard } from "@/components/features/workspace/detail/kanban-board";
-import { ScheduleView } from "@/components/features/workspace/detail/schedule-view";
-import { DocsView } from "@/components/features/workspace/detail/docs-view";
+import { DashboardOverview } from "@/components/features/workspace/detail/overview";
+import { KanbanBoard } from "@/components/features/workspace/detail/board";
+import { ScheduleView } from "@/components/features/workspace/detail/schedule";
+import { DocsView } from "@/components/features/workspace/detail/docs";
 import { IdeaBoard } from "@/components/features/workspace/detail/idea-board";
 import { TeamChat } from "@/components/features/workspace/detail/chat/team-chat";
 import { GlobalHuddleSidebar } from "@/components/features/workspace/detail/huddle/live-huddle"; // Repurposed file
