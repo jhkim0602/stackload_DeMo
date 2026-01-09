@@ -113,15 +113,11 @@ export function WorkspaceSidebar({ projectId, activeTab, onTabChange }: Workspac
            <div className="space-y-0.5">
               <Button
                  variant="ghost"
-                 className={cn("w-full justify-start h-8 px-2 text-muted-foreground font-normal", activeTab === 'huddle' && "bg-muted text-foreground font-medium")}
+                 className={cn("w-full justify-start h-8 px-2 text-muted-foreground font-normal hover:bg-muted/80 hover:text-foreground transition-all", activeTab === 'huddle' && "bg-indigo-50 text-indigo-700 font-medium")}
                  onClick={() => onTabChange('huddle')}
               >
-                 <Volume2 className="mr-2 h-3.5 w-3.5" />
-                 Dev Room
-              </Button>
-              <Button variant="ghost" className="w-full justify-start h-8 px-2 text-muted-foreground font-normal">
-                 <Volume2 className="mr-2 h-3.5 w-3.5" />
-                 Lounge
+                 <Volume2 className={cn("mr-2 h-3.5 w-3.5", activeTab === 'huddle' ? "text-indigo-600" : "text-muted-foreground")} />
+                 Huddle
               </Button>
            </div>
         </div>

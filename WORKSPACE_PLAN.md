@@ -102,6 +102,10 @@
 *   `workspace-server`는 **Stateful**합니다 (Socket 연결 유지). 사용자가 늘어나면 서버를 다중화해야 합니다.
 *   **Redis Adapter**: 여러 대의 Socket.io 서버 간 메시지 및 이벤트를 동기화하기 위해 Redis Pub/Sub 도입 필수.
 
+> [!IMPORTANT]
+> **전략적 연기 (Strategic Deferral)**
+> 초기 개발 속도를 위해 **Phase 1에서는 Redis 없이 단일 서버 메모리(In-Memory)**로 상태를 관리합니다. 기능이 완성되고 유저가 생기면 그때 **Phase 2로 Redis를 도입**하여 확장을 꾀합니다. (YAGNI 원칙 준수)
+
 ---
 
 ## 4. 유저 확보 및 배포 전략 (Deployment & Growth Strategy)

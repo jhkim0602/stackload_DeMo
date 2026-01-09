@@ -9,6 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  transpilePackages: ['@stackload/meeting-sdk'],
 }
 
 export default nextConfig

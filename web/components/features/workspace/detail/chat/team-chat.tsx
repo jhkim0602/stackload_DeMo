@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Paperclip, Smile, Hash, Volume2, AtSign } from "lucide-react";
 import { useWorkspaceStore, ProjectMember } from "../../store/mock-data";
+import { useSocketStore } from "../../store/socket-store";
 import { cn } from "@/lib/utils";
 import { SmartInput } from "../../common/smart-input";
 
@@ -16,8 +17,12 @@ interface TeamChatProps {
 }
 
 export function TeamChat({ projectId, channelName = 'general' }: TeamChatProps) {
-  const { projects, messages, sendMessage, setActiveTaskId } = useWorkspaceStore();
+  const { projects, messages, setActiveTaskId } = useWorkspaceStore();
+  const { sendMessage } = useSocketStore();
   const project = projects.find(p => p.id === projectId);
+
+  // Connect socket if not connected (Ideally do this at layout level, but for safety check here or rely on layout)
+  // We will add connection logic in Layout.
 
   // Filter messages for this channel
   const channelMessages = messages.filter(m => m.channelId === channelName);
@@ -34,6 +39,7 @@ export function TeamChat({ projectId, channelName = 'general' }: TeamChatProps) 
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
+    // Use Socket Store to send
     sendMessage(channelName, inputValue, 'u1', 'user');
     setInputValue('');
   };

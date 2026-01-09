@@ -10,17 +10,56 @@ import { ScheduleView } from "@/components/features/workspace/detail/schedule-vi
 import { DocsView } from "@/components/features/workspace/detail/docs-view";
 import { IdeaBoard } from "@/components/features/workspace/detail/idea-board";
 import { TeamChat } from "@/components/features/workspace/detail/chat/team-chat";
-import { LiveHuddle } from "@/components/features/workspace/detail/huddle/live-huddle";
+import { GlobalHuddleSidebar } from "@/components/features/workspace/detail/huddle/live-huddle"; // Repurposed file
 import { UnifiedInbox } from "@/components/features/workspace/personal/unified-inbox";
 import { MyBriefcase } from "@/components/features/workspace/personal/my-briefcase";
 import { TaskDetailModal } from "@/components/features/workspace/modules/task/detail-modal";
 import { useWorkspaceStore } from "@/components/features/workspace/store/mock-data";
+import { useSocketStore } from "@/components/features/workspace/store/socket-store";
+import { useEffect } from "react";
 
 export default function WorkspaceDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
   const { activeTaskId, setActiveTaskId } = useWorkspaceStore();
+  const { connect, disconnect } = useSocketStore();
   const [activeTab, setActiveTab] = useState('overview');
+
+  const [isHuddleOpen, setIsHuddleOpen] = useState(false);
+  const [huddleViewMode, setHuddleViewMode] = useState<'full' | 'pip'>('full');
+
+  useEffect(() => {
+    // Connect to Workspace Server (Port 4000)
+    connect('http://localhost:4000', 'u1', projectId);
+    return () => {
+        disconnect();
+    }
+  }, [projectId, connect, disconnect]);
+
+  const handleTabChange = (tab: string) => {
+      if (tab === 'huddle') {
+          // Smart Toggle Logic
+          if (!isHuddleOpen) {
+              setIsHuddleOpen(true);
+              setHuddleViewMode('full');
+          } else {
+              // If already open
+               if (huddleViewMode === 'pip') {
+                   // Restore to Full Screen
+                   setHuddleViewMode('full');
+               } else {
+                   // Toggle Off
+                   setIsHuddleOpen(!isHuddleOpen);
+               }
+          }
+      } else {
+          setActiveTab(tab);
+          // Auto-minimize Huddle when navigating
+          if (isHuddleOpen && huddleViewMode === 'full') {
+              setHuddleViewMode('pip');
+          }
+      }
+  };
 
   const renderContent = () => {
     if (activeTab.startsWith('chat-')) {
@@ -28,9 +67,7 @@ export default function WorkspaceDetailPage() {
        return <TeamChat projectId={projectId} channelName={channel} />;
     }
 
-    if (activeTab === 'huddle') {
-       return <LiveHuddle projectId={projectId} onClose={() => setActiveTab('overview')} />;
-    }
+    // Removed 'huddle' case from here as it's now a global sidebar
 
     switch (activeTab) {
       case 'board':
@@ -53,16 +90,29 @@ export default function WorkspaceDetailPage() {
 
   return (
     <SidebarLayout>
-      <div className="flex h-full w-full">
+      <div className="flex h-full w-full relative">
         <WorkspaceSidebar
           projectId={projectId}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          activeTab={activeTab} // Note: This won't highlight 'huddle' button when sidebar is open, which acts as a toggle.
+          onTabChange={handleTabChange}
         />
-        <main className="flex-1 overflow-auto bg-background h-[calc(100vh-4rem)]">
+
+        {/* Global Huddle Sidebar (Left or Right? Plan said 'Left or Right', reusing layout logic).
+            Let's put it between Sidebar and Main for "PIP/Sidebar" feel.
+        */}
+        <main className={`flex-1 bg-background h-[calc(100vh-4rem)] overflow-auto transition-all duration-300`}>
           {renderContent()}
         </main>
       </div>
+
+      {/* Global Huddle Overlay (Independent of Layout Flow) */}
+      <GlobalHuddleSidebar
+          projectId={projectId}
+          isOpen={isHuddleOpen}
+          onClose={() => setIsHuddleOpen(false)}
+          viewMode={huddleViewMode}
+          onViewModeChange={setHuddleViewMode}
+      />
 
       <TaskDetailModal
         taskId={activeTaskId}
