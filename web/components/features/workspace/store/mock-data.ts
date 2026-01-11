@@ -264,11 +264,7 @@ export const INITIAL_TASKS: Task[] = [
 
 export const INITIAL_DOCS: Doc[] = [
   { id: 'd-1', projectId: 'p-1', title: 'API Specification v1.0', updatedAt: '2025-01-05', content: [{ type: 'paragraph', content: 'Specs...' }] },
-  // Add some templates to existing project for demo
-  { id: 'd-2', projectId: 'p-1', title: '📝 1. Product Requirements Document (PRD)', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'Product Requirements Document' }, { type: 'paragraph', content: 'This is a template for PRD.' }] },
-  { id: 'd-3', projectId: 'p-1', title: '📅 2. Project Roadmap', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'Project Roadmap' }] },
-  { id: 'd-4', projectId: 'p-1', title: '🏗️ 3. Tech Architecture', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'System Architecture' }] },
-  { id: 'd-5', projectId: 'p-1', title: '🤝 4. Team Ground Rules', updatedAt: '2025-01-06', content: [{ type: 'heading', content: 'Team Ground Rules' }] }
+  ...generateTemplates('p-1')
 ];
 
 export const INITIAL_NOTIFICATIONS: Notification[] = [
@@ -286,70 +282,141 @@ export const INITIAL_MESSAGES: ChannelMessage[] = [
 
 // --- Template Generators ---
 
-export const generateTemplates = (projectId: string): Doc[] => [
-  {
-    id: `d-${Date.now()}-1`,
-    projectId,
-    title: '📝 1. Product Requirements Document (PRD)',
-    updatedAt: new Date().toISOString(),
-    content: [
-      { type: 'heading', content: '🚀 Product Requirements Document', props: { level: 1 } },
-      { type: 'paragraph', content: '프로젝트의 핵심 목표와 기능을 정의하는 문서입니다.' },
-      { type: 'heading', content: '1. 배경 및 목적 (Background & Goals)', props: { level: 2 } },
-      { type: 'bulletListItem', content: '문제 정의: ' },
-      { type: 'bulletListItem', content: '해결 방안: ' },
-      { type: 'heading', content: '2. 타겟 유저 (Target User)', props: { level: 2 } },
-      { type: 'bulletListItem', content: '페르소나 A: ' },
-      { type: 'heading', content: '3. 핵심 기능 (Core Features - MVP)', props: { level: 2 } },
-      { type: 'checkListItem', content: '회원가입/로그인' },
-      { type: 'checkListItem', content: '메인 대시보드' },
-    ]
-  },
-  {
-    id: `d-${Date.now()}-2`,
-    projectId,
-    title: '📅 2. Project Roadmap',
-    updatedAt: new Date().toISOString(),
-    content: [
-      { type: 'heading', content: '📅 Project Schedule & Milestones', props: { level: 1 } },
-      { type: 'heading', content: '1주차: 기획 및 설계', props: { level: 2 } },
-      { type: 'bulletListItem', content: 'Day 1: 아이디어 확정' },
-      { type: 'bulletListItem', content: 'Day 2: 와이어프레임 & ERD 설계' },
-      { type: 'heading', content: '2주차: 핵심 기능 개발', props: { level: 2 } },
-      { type: 'bulletListItem', content: 'Day 1: 개발 환경 세팅' },
-    ]
-  },
-  {
-    id: `d-${Date.now()}-3`,
-    projectId,
-    title: '🏗️ 3. Tech Architecture',
-    updatedAt: new Date().toISOString(),
-    content: [
-      { type: 'heading', content: '🏗️ Technical Architecture Spec', props: { level: 1 } },
-      { type: 'heading', content: 'Frontend Stack', props: { level: 2 } },
-      { type: 'bulletListItem', content: 'Framework: Next.js 14' },
-      { type: 'bulletListItem', content: 'Styling: Tailwind CSS' },
-      { type: 'heading', content: 'Backend Stack', props: { level: 2 } },
-      { type: 'bulletListItem', content: 'Language: Python / Node.js' },
-      { type: 'bulletListItem', content: 'Database: Supabase (PostgreSQL)' },
-    ]
-  },
-  {
-    id: `d-${Date.now()}-4`,
-    projectId,
-    title: '🤝 4. Team Ground Rules',
-    updatedAt: new Date().toISOString(),
-    content: [
-      { type: 'heading', content: '🤝 Team Ground Rules', props: { level: 1 } },
-      { type: 'heading', content: 'Communication', props: { level: 2 } },
-      { type: 'bulletListItem', content: '모든 회의록은 Docs에 남긴다.' },
-      { type: 'bulletListItem', content: 'Slack 응답은 1시간 이내에.' },
-      { type: 'heading', content: 'Git Convention', props: { level: 2 } },
-      { type: 'bulletListItem', content: 'feat: 새로운 기능 추가' },
-      { type: 'bulletListItem', content: 'fix: 버그 수정' },
-    ]
-  }
-];
+export function generateTemplates(projectId: string): Doc[] {
+  const updatedAt = new Date().toISOString();
+  return [
+    {
+      id: `d-${Date.now()}-1`,
+      projectId,
+      title: '📝 1. Product Requirements Document (PRD)',
+      updatedAt,
+      content: [
+        { type: 'heading', content: '🚀 Product Requirements Document', props: { level: 1 } },
+        { type: 'paragraph', content: '프로젝트의 핵심 목표와 기능을 정의하는 문서입니다.' },
+        { type: 'heading', content: '1. 배경 및 목적 (Background & Goals)', props: { level: 2 } },
+        { type: 'bulletListItem', content: '문제 정의: ' },
+        { type: 'bulletListItem', content: '해결 방안: ' },
+        { type: 'heading', content: '2. 타겟 유저 (Target User)', props: { level: 2 } },
+        { type: 'bulletListItem', content: '페르소나 A: ' },
+        { type: 'heading', content: '3. 핵심 기능 (Core Features - MVP)', props: { level: 2 } },
+        { type: 'checkListItem', content: '회원가입/로그인' },
+        { type: 'checkListItem', content: '메인 대시보드' },
+        { type: 'heading', content: '4. 범위 (Scope)', props: { level: 2 } },
+        { type: 'bulletListItem', content: 'In Scope: ' },
+        { type: 'bulletListItem', content: 'Out of Scope: ' },
+        { type: 'heading', content: '5. 성공 지표 (Success Metrics)', props: { level: 2 } },
+        { type: 'bulletListItem', content: '예: 데모 성공, 사용자 테스트 통과' },
+        { type: 'heading', content: '6. 리스크 및 가정 (Risks & Assumptions)', props: { level: 2 } },
+        { type: 'bulletListItem', content: '리스크: ' },
+        { type: 'bulletListItem', content: '가정: ' },
+      ]
+    },
+    {
+      id: `d-${Date.now()}-2`,
+      projectId,
+      title: '📅 2. Project Roadmap',
+      updatedAt,
+      content: [
+        { type: 'heading', content: '📅 Project Schedule & Milestones', props: { level: 1 } },
+        { type: 'paragraph', content: '해커톤 일정에 맞춘 주요 마일스톤을 정리합니다.' },
+        { type: 'heading', content: 'D-7 ~ D-5: 기획/리서치', props: { level: 2 } },
+        { type: 'bulletListItem', content: '문제 정의, 레퍼런스 조사' },
+        { type: 'bulletListItem', content: '핵심 기능 확정' },
+        { type: 'heading', content: 'D-4 ~ D-2: 구현', props: { level: 2 } },
+        { type: 'bulletListItem', content: '핵심 기능 개발' },
+        { type: 'bulletListItem', content: 'QA/테스트 시나리오 작성' },
+        { type: 'heading', content: 'D-1: 데모/발표 준비', props: { level: 2 } },
+        { type: 'bulletListItem', content: '데모 시나리오 확정' },
+        { type: 'bulletListItem', content: '발표 자료 제작' },
+        { type: 'heading', content: 'D-Day: 제출/발표', props: { level: 2 } },
+        { type: 'checkListItem', content: '제출 링크 업로드' },
+        { type: 'checkListItem', content: '발표 리허설 완료' },
+      ]
+    },
+    {
+      id: `d-${Date.now()}-3`,
+      projectId,
+      title: '🏁 3. Hackathon Brief',
+      updatedAt,
+      content: [
+        { type: 'heading', content: '🏁 Hackathon Brief', props: { level: 1 } },
+        { type: 'paragraph', content: '대회 핵심 정보를 한 곳에 정리합니다.' },
+        { type: 'bulletListItem', content: '해커톤명: [해커톤명]' },
+        { type: 'bulletListItem', content: '공식 URL: [공식 링크]' },
+        { type: 'bulletListItem', content: '주제/트랙: ' },
+        { type: 'bulletListItem', content: '제출 마감: [YYYY-MM-DD]' },
+        { type: 'bulletListItem', content: '발표 일정: [YYYY-MM-DD]' },
+        { type: 'heading', content: '필수 산출물', props: { level: 2 } },
+        { type: 'checkListItem', content: '서비스 소개 문서' },
+        { type: 'checkListItem', content: '발표 자료(PDF)' },
+        { type: 'checkListItem', content: '데모 영상' },
+      ]
+    },
+    {
+      id: `d-${Date.now()}-4`,
+      projectId,
+      title: '🏗️ 4. Tech Architecture',
+      updatedAt,
+      content: [
+        { type: 'heading', content: '🏗️ Technical Architecture Spec', props: { level: 1 } },
+        { type: 'heading', content: 'Frontend Stack', props: { level: 2 } },
+        { type: 'bulletListItem', content: 'Framework: Next.js 14' },
+        { type: 'bulletListItem', content: 'Styling: Tailwind CSS' },
+        { type: 'heading', content: 'Backend Stack', props: { level: 2 } },
+        { type: 'bulletListItem', content: 'Language: Python / Node.js' },
+        { type: 'bulletListItem', content: 'Database: Supabase (PostgreSQL)' },
+        { type: 'heading', content: 'Infra & Ops', props: { level: 2 } },
+        { type: 'bulletListItem', content: 'Deployment: Vercel / Railway' },
+        { type: 'bulletListItem', content: 'Monitoring: 기본 로그/알림' },
+      ]
+    },
+    {
+      id: `d-${Date.now()}-5`,
+      projectId,
+      title: '🤝 5. Team Ground Rules',
+      updatedAt,
+      content: [
+        { type: 'heading', content: '🤝 Team Ground Rules', props: { level: 1 } },
+        { type: 'heading', content: 'Roles & Ownership', props: { level: 2 } },
+        { type: 'bulletListItem', content: 'PM/기획: ' },
+        { type: 'bulletListItem', content: 'FE/BE/Design: ' },
+        { type: 'heading', content: 'Communication', props: { level: 2 } },
+        { type: 'bulletListItem', content: '모든 회의록은 Docs에 남긴다.' },
+        { type: 'bulletListItem', content: '긴급 연락은 디스코드/전화' },
+        { type: 'heading', content: 'Git Convention', props: { level: 2 } },
+        { type: 'bulletListItem', content: 'feat: 새로운 기능 추가' },
+        { type: 'bulletListItem', content: 'fix: 버그 수정' },
+      ]
+    },
+    {
+      id: `d-${Date.now()}-6`,
+      projectId,
+      title: '✅ 6. Submission Checklist',
+      updatedAt,
+      content: [
+        { type: 'heading', content: '✅ Submission Checklist', props: { level: 1 } },
+        { type: 'checkListItem', content: '서비스/프로덕트 설명서' },
+        { type: 'checkListItem', content: '발표 자료(PPT/PDF)' },
+        { type: 'checkListItem', content: '데모 영상 링크' },
+        { type: 'checkListItem', content: '소스코드 저장소 링크' },
+        { type: 'checkListItem', content: '팀원 소개/역할 정리' },
+      ]
+    },
+    {
+      id: `d-${Date.now()}-7`,
+      projectId,
+      title: '⚠️ 7. Risk Log',
+      updatedAt,
+      content: [
+        { type: 'heading', content: '⚠️ Risk Log', props: { level: 1 } },
+        { type: 'paragraph', content: '리스크와 대응 계획을 기록합니다.' },
+        { type: 'heading', content: '리스크 목록', props: { level: 2 } },
+        { type: 'bulletListItem', content: '리스크: / 대응: / 담당: ' },
+        { type: 'bulletListItem', content: '리스크: / 대응: / 담당: ' },
+      ]
+    }
+  ];
+}
 
 // --- Store ---
 

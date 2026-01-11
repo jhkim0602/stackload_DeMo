@@ -1,13 +1,27 @@
 version: "3"
 services:
-  livekit:
+  livekit-interview:
     image: livekit/livekit-server:latest
-    container_name: livekit-server
-    command: --dev
+    container_name: livekit-server-interview
+    command: --config /livekit-interview.yaml --dev
     ports:
       - "7880:7880"
       - "7881:7881"
-      - "7882:7882/udp"
+      - "52000-52100:52000-52100/udp"
+    volumes:
+      - ./livekit-interview.yaml:/livekit-interview.yaml
     environment:
-      - KEYS=devkey:secret
+      - "LIVEKIT_KEYS=LK_INTERVIEW_KEY: LK_INTERVIEW_SECRET"
 
+  livekit-workspace:
+    image: livekit/livekit-server:latest
+    container_name: livekit-server-workspace
+    command: --config /livekit-workspace.yaml --dev
+    ports:
+      - "7990:7990"
+      - "7991:7991"
+      - "61000-61100:61000-61100/udp"
+    volumes:
+      - ./livekit-workspace.yaml:/livekit-workspace.yaml
+    environment:
+        - "LIVEKIT_KEYS=LK_WORKSPACE_KEY: LK_WORKSPACE_SECRET"

@@ -46,10 +46,12 @@ export function ProjectHero({ projectId }: ProjectHeroProps) {
 
           <div className="flex gap-4 min-w-[200px]">
              {dDay !== null && (
-               <div className="flex-1 bg-background rounded-xl border p-4 flex flex-col items-center justify-center text-center shadow-sm">
+               <div className="flex-1 bg-background rounded-xl border p-4 flex flex-col items-center justify-center text-center shadow-sm min-w-[100px]">
                   <CalendarClock className="h-6 w-6 text-orange-500 mb-2" />
-                  <div className="text-2xl font-bold text-orange-600">D-{dDay}</div>
-                  <div className="text-xs text-muted-foreground">Days Remaining</div>
+                  <div className="text-2xl font-bold text-orange-600 whitespace-nowrap">
+                    {dDay === 0 ? "D-Day" : dDay > 0 ? `D-${dDay}` : `D+${Math.abs(dDay)}`}
+                  </div>
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">Days Remaining</div>
                </div>
              )}
              <div className="flex-1 bg-background rounded-xl border p-4 flex flex-col items-center justify-center text-center shadow-sm">

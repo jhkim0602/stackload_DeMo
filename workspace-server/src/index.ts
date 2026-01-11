@@ -1,6 +1,7 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { setupSocketGateway } from "./modules/socket/socket.gateway";
+import { setupYjsGateway } from "./modules/board/yjs.gateway";
 
 const PORT = process.env.PORT || 4000;
 
@@ -18,6 +19,9 @@ const io = new Server(httpServer, {
 
 // Initialize Socket Gateway
 setupSocketGateway(io);
+
+// Initialize Yjs Gateway
+setupYjsGateway(httpServer);
 
 httpServer.listen(PORT, () => {
     console.log(`🚀 Workspace Server running on port ${PORT}`);

@@ -10,7 +10,7 @@ import { ScheduleView } from "@/components/features/workspace/detail/schedule";
 import { DocsView } from "@/components/features/workspace/detail/docs";
 import { IdeaBoard } from "@/components/features/workspace/detail/idea-board";
 import { TeamChat } from "@/components/features/workspace/detail/chat/team-chat";
-import { GlobalHuddleSidebar } from "@/components/features/workspace/detail/huddle/live-huddle"; // Repurposed file
+import { GlobalHuddleSidebar } from "@/components/features/workspace/detail/huddle/live-huddle";
 import { UnifiedInbox } from "@/components/features/workspace/personal/unified-inbox";
 import { MyBriefcase } from "@/components/features/workspace/personal/my-briefcase";
 import { TaskDetailModal } from "@/components/features/workspace/modules/task/detail-modal";
@@ -22,7 +22,7 @@ export default function WorkspaceDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
   const { activeTaskId, setActiveTaskId } = useWorkspaceStore();
-  const { connect, disconnect } = useSocketStore();
+  const { connectSocket, disconnectSocket } = useSocketStore();
   const [activeTab, setActiveTab] = useState('overview');
 
   const [isHuddleOpen, setIsHuddleOpen] = useState(false);
@@ -30,11 +30,13 @@ export default function WorkspaceDetailPage() {
 
   useEffect(() => {
     // Connect to Workspace Server (Port 4000)
-    connect('http://localhost:4000', 'u1', projectId);
-    return () => {
-        disconnect();
+    if (projectId) {
+        connectSocket(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000", "u1", projectId);
     }
-  }, [projectId, connect, disconnect]);
+    return () => {
+        disconnectSocket();
+    }
+  }, [projectId, connectSocket, disconnectSocket]);
 
   const handleTabChange = (tab: string) => {
       if (tab === 'huddle') {
@@ -66,8 +68,6 @@ export default function WorkspaceDetailPage() {
        const channel = activeTab.replace('chat-', '');
        return <TeamChat projectId={projectId} channelName={channel} />;
     }
-
-    // Removed 'huddle' case from here as it's now a global sidebar
 
     switch (activeTab) {
       case 'board':

@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { setupChatGateway } from '../chat/chat.gateway';
-import { setupHuddleGateway } from '../huddle/huddle.gateway';
+// import { setupHuddleGateway } from '../huddle/huddle.gateway'; // Removed
 import { setupBoardGateway } from '../board/board.gateway';
 
 interface ConnectedUser {
@@ -53,6 +53,6 @@ export const setupSocketGateway = (io: Server) => {
 
   // Setup functional namespaces/modules
   setupChatGateway(io);
-  setupHuddleGateway(io);
+  // setupHuddleGateway(io); // Removed
   setupBoardGateway(io);
 };

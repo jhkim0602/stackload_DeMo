@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
   const room = req.nextUrl.searchParams.get("room") || "quickstart-room";
   const username = req.nextUrl.searchParams.get("username") || "guest";
 
-  if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+  if (!process.env.LIVEKIT_API_KEY_INTERVIEW || !process.env.LIVEKIT_API_SECRET_INTERVIEW) {
     return NextResponse.json(
       { error: "Server misconfigured" },
       { status: 500 }
@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
   }
 
   const at = new AccessToken(
-    process.env.LIVEKIT_API_KEY,
-    process.env.LIVEKIT_API_SECRET,
+    process.env.LIVEKIT_API_KEY_INTERVIEW,
+    process.env.LIVEKIT_API_SECRET_INTERVIEW,
     {
       identity: username,
     }

@@ -52,7 +52,7 @@ export default function InterviewLiveKit() {
       video={false}
       audio={true}
       token={token}
-      serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+      serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL_INTERVIEW}
       connect={true}
       data-lk-theme="default"
       style={{ height: "100%" }}

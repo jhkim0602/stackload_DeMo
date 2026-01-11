@@ -1,0 +1,13 @@
+port: 7990
+bind_addresses:
+    - "0.0.0.0"
+rtc:
+    tcp_port: 7991
+    port_range_start: 61000
+    port_range_end: 62000
+    use_external_ip: false
+keys:
+    LK_WORKSPACE_KEY: LK_WORKSPACE_SECRET
+logging:
+    json: false
+    level: info
